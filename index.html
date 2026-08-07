@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two-Step Equations</title>
+<style>
+  :root{
+    --ink:#0f172a; --line:#1e293b; --muted:#64748b; --faint:#94a3b8;
+    --blue:#1d4ed8; --blue-b:#3b82f6; --blue-bg:#eff6ff;
+    --green:#059669; --green-bg:#ecfdf5;
+    --rose:#e11d48; --rose-bg:#fff1f2;
+    --page:#f8fafc; --edge:#e2e8f0;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;margin:0;}
+  body{
+    background:var(--page); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{height:100%;display:flex;flex-direction:column;overflow:hidden;padding:12px 16px;}
+  .wrap{width:100%;max-width:52rem;margin:0 auto;display:flex;flex-direction:column;height:100%;min-height:0;}
+
+  /* nav tabs */
+  .nav-tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid var(--edge);padding-bottom:2px;}
+  .tab-btn{
+    background:none; border:none; padding:8px 14px; font-size:.9rem; font-weight:600;
+    color:var(--muted); cursor:pointer; border-radius:6px 6px 0 0; transition:all .15s ease;
+  }
+  .tab-btn:hover{color:var(--ink); background:var(--edge);}
+  .tab-btn.active{color:var(--blue); border-bottom:3px solid var(--blue); background:#fff;}
+
+  /* header */
+  .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;flex-shrink:0;}
+  h1{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.18em;margin:0;}
+  .levels{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .score{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .score b{color:var(--green);}
+  /* how many of each kind have been solved; the current kind is highlighted */
+  .tally{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:.72rem;
+         color:var(--faint);font-variant-numeric:tabular-nums;}
+  .tally span{white-space:nowrap;}
+  .tally b{color:var(--muted);font-weight:600;}
+  .tally .on,.tally .on b{color:var(--blue);}
+
+  /* work area */
+  .ghost{position:absolute;left:-10000px;top:0;visibility:hidden;pointer-events:none;
+         width:max-content;}
+  .work{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        justify-content:safe center;padding:6px 0;overflow:hidden;}
+  /* the equation and the panel under it scale together as one block, so the
+     size is set once per problem and nothing shifts underfoot mid-solve */
+  .stagebox{display:flex;justify-content:center;align-items:flex-start;flex-shrink:0;}
+  .stage{display:flex;flex-direction:column;align-items:center;gap:14px;transform-origin:top center;}
+  .scroller{display:flex;justify-content:center;}
+  .scroller > .eq{flex:0 0 auto;}
+  .eq{display:grid;column-gap:30px;row-gap:10px;width:max-content;margin:0 auto;
+      transform-origin:top center;
+      font-family:Georgia,"Times New Roman",serif;font-size:1.85rem;}
+  /* two-step needs both shapes at once: four columns for the line that still
+     carries a constant, and room for a fraction bar on the line below it */
+  .eq.k-two{grid-template-columns:auto auto auto auto;row-gap:8px;font-size:1.7rem;column-gap:22px;}
+  .eq.k-two .cell{gap:10px;min-height:3rem;}
+  .cell.span2{grid-column:span 2;}
+  .eq.k-two .dfrac{font-size:1em;}
+  .eq.k-two .dfrac > .t,.eq.k-two .dfrac > .b{padding:0 8px;gap:.28em;}
+  .eq.k-two .dfrac > .bar{min-width:3.2rem;border-top-color:var(--line);}
+  .eq.k-two .mgroup{gap:6px;}
+  .eq.k-two .mgroup.tall .paren{font-size:2.2em;}
+  /* room above and below for the cancelled numbers, without wasting a whole line */
+  .eq.k-two .mgroup.roomy{padding:1.3rem 0;}
+  .cell{min-height:3.6rem;padding:2px 0;display:flex;align-items:center;justify-content:center;gap:6px;
+        transition:opacity .7s ease-out;}
+  .rule{grid-column:1 / -1;height:2px;margin:5px 0;border-top:2px solid var(--line);}
+  /* same row break as .rule, but with no line drawn: nothing is being summed */
+  .spacer{grid-column:1 / -1;height:0;margin:9px 0;}
+  .hide{visibility:hidden;}
+  .eqsign{color:var(--faint);}
+  .blue{color:var(--blue);}
+  .green{color:var(--green);}
+  .grey{color:var(--muted);}
+  .faint{color:var(--faint);}
+  .cancelling{text-decoration:line-through;text-decoration-thickness:2px;opacity:.6;}
+  .struck{text-decoration:line-through;text-decoration-thickness:2px;opacity:.25;}
+
+  /* small inline fractions, used while adding and subtracting */
+  .stack{display:inline-flex;flex-direction:column;align-items:center;margin:0 3px;
+         font-size:.66em;line-height:1.18;vertical-align:-.44em;}
+  .stack .t,.stack .b{padding:0 5px;}
+  .stack .bar{width:100%;border-top:2px solid currentColor;margin:.14em 0;}
+  .num{display:inline-flex;align-items:center;vertical-align:middle;}
+  .num .whole{margin-left:2px;}
+  /* a mixed number: whole part beside a smaller stacked fraction */
+  .mixnum{display:inline-flex;align-items:center;vertical-align:middle;}
+  .mixnum .whole{line-height:1;}
+  .mixnum .dfrac{font-size:.6em;margin-left:4px;}
+  .sgn{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;}
+
+  /* full-size fractions, used when multiplying and dividing */
+  .dfrac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;
+         line-height:1.15;margin:0 1px;font-size:.86em;}
+  .dfrac > .t,.dfrac > .b{padding:0 7px;display:flex;align-items:center;justify-content:center;}
+  .dfrac > .bar{width:100%;min-width:1.4rem;border-top:2px solid currentColor;margin:4px 0;}
+  .dfrac.grow{animation:grow .35s ease-out;}
+
+  /* the reciprocal the student writes: two boxes stacked over a bar */
+  .fracbox{display:inline-flex;flex-direction:column;align-items:center;gap:4px;vertical-align:middle;}
+  .fracbox > .bar{width:112%;border-top:2px solid var(--line);}
+
+  /* diagonal cancel stroke, drawn corner to corner so it fits whatever it crosses */
+  .slash{position:relative;display:inline-flex;align-items:center;justify-content:center;
+         padding:0 .18em;background-repeat:no-repeat;background-position:center;background-size:100% 100%;
+         background-image:linear-gradient(to bottom right,
+           transparent calc(50% - 1.8px), var(--sl) calc(50% - 1.8px),
+           var(--sl) calc(50% + 1.8px), transparent calc(50% + 1.8px));}
+  .slash.draw{--sl:#475569;color:#94a3b8;animation:draw .5s ease-out both;}
+  .slash.dim{--sl:#a3aec0;color:#cbd5e1;}
+  .slash.cross{--sl:#64748b;color:#9aa7bb;}
+  /* a number waiting to be simplified: same box as .slash, but no stroke yet */
+  .pend{display:inline-flex;align-items:center;justify-content:center;padding:0 .18em;}
+
+  /* cross-simplifying: the reduced number is written above or below the crossed-out one
+     without shifting it, so the originals keep their place on the line */
+  .cx{position:relative;display:inline-flex;align-items:center;justify-content:center;}
+  .cx .redu{position:absolute;left:50%;transform:translateX(-50%);
+            display:flex;align-items:center;justify-content:center;
+            color:var(--blue);font-size:.66em;line-height:1;}
+  .cx.above .redu{bottom:100%;margin-bottom:3px;}
+  .cx.below .redu{top:100%;margin-top:3px;}
+
+  /* parenthesised group: multiplying both sides */
+  .mgroup{display:inline-flex;align-items:center;gap:9px;}
+  .mgroup.roomy{padding:1.9rem 0;}
+  .paren{font-size:1.35em;line-height:1;color:var(--line);}
+  .mgroup.tall .paren{font-size:2.6em;font-weight:300;}
+  .mgroup.fade{animation:grow .35s ease-out;}
+  @keyframes grow{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  @keyframes draw{from{background-size:0% 100%;}to{background-size:100% 100%;}}
+
+  /* inputs */
+  .box{height:2.5rem;width:3.5rem;border:2px solid var(--blue-b);background:var(--blue-bg);color:var(--blue);
+       border-radius:6px;text-align:center;font-family:Georgia,"Times New Roman",serif;font-size:1.5rem;
+       outline:none;transition:border-color .15s,background .15s;}
+  .box.wide{width:5rem;}
+  .box.small{font-size:1.25rem;}
+  .box.mini{height:2.15rem;width:3.2rem;font-size:1.25rem;}
+  .box.tiny{height:1.8rem;width:2.4rem;font-size:1.05rem;border-radius:5px;}
+  .box:focus{border-color:var(--blue);background:#fff;}
+  .box.bad{border-color:#fb7185;background:var(--rose-bg);color:var(--rose);}
+  .box.ok{border-color:#10b981;background:var(--green-bg);color:var(--green);}
+  .preview{color:var(--faint);}
+
+  /* fraction-shaped input: box above the denominator */
+  .fracin{display:inline-flex;flex-direction:column;align-items:center;gap:4px;}
+  .fracin .bar2{width:4rem;border-top:2px solid var(--line);}
+  .fracin .den{color:#475569;line-height:1;font-family:Georgia,serif;}
+
+  /* operation buttons */
+  .ops{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;}
+  .op{width:5.2rem;height:4.2rem;border:2px solid var(--edge);background:#fff;color:var(--line);
+      border-radius:12px;cursor:pointer;font-family:Georgia,"Times New Roman",serif;font-size:2.1rem;
+      line-height:1;display:flex;align-items:center;justify-content:center;
+      transition:border-color .15s,background .15s,transform .1s;}
+  .op:hover{border-color:var(--blue-b);background:var(--blue-bg);color:var(--blue);}
+  .op:active{transform:translateY(1px);}
+  .op:focus-visible{outline:3px solid var(--blue-b);outline-offset:2px;}
+  .op.shake{animation:shake .32s;border-color:#fb7185;background:var(--rose-bg);color:var(--rose);}
+  @keyframes shake{0%,100%{transform:none;}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+
+  .panel{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;
+         font-family:Georgia,serif;font-size:1.35rem;}
+  .panel .lbl{font-size:.85rem;color:var(--muted);
+              font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
+  .checkline{width:100%;text-align:center;font-family:Georgia,serif;font-size:1.42rem;line-height:2.1;}
+  .checkline .orig{color:var(--faint);}
+  .checkline .sub{margin-top:12px;}
+
+  /* prompt bar */
+  /* fixed height on purpose: a hint or a nudge appearing must not change how
+     much room the equation has, or the writing would resize mid-problem */
+  .promptbar{flex-shrink:0;border-top:1px solid var(--edge);padding-top:12px;padding-bottom:4px;
+             height:7rem;overflow-y:auto;}
+  .prompt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;color:#334155;font-size:.98rem;}
+  .prompt .math{font-family:Georgia,serif;}
+  .prompt strong{font-weight:600;}
+  .link{background:none;border:none;padding:0;color:var(--muted);font-size:.85rem;font-family:inherit;
+        text-decoration:underline;text-underline-offset:4px;cursor:pointer;}
+  .link:hover{color:var(--ink);}
+  .hintline{width:100%;font-size:.85rem;color:#475569;display:flex;flex-wrap:wrap;align-items:center;gap:5px;}
+  .missline{margin-top:4px;font-size:.85rem;color:var(--rose);}
+  .noteline{margin-top:4px;font-size:.85rem;color:var(--muted);}
+  .next{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 20px;
+        font-size:.95rem;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .next:hover{background:#1e293b;}
+  .skip{margin-top:4px;font-size:.72rem;color:var(--faint);}
+  .row-between{display:flex;align-items:center;justify-content:between;gap:12px;width:100%;}
+
+  @media (max-width:640px){
+    .nav-tabs{overflow-x:auto;}
+    .tab-btn{padding:6px 10px;font-size:.8rem;white-space:nowrap;}
+    .eq{font-size:1.45rem;column-gap:15px;}
+    .eq.k-two{font-size:1.3rem;column-gap:13px;row-gap:7px;}
+    .eq.k-two .cell{min-height:2.7rem;gap:7px;}
+    .eq.k-two .dfrac > .bar{min-width:2.6rem;}
+    .cell{min-height:3.1rem;}
+    h1{font-size:.9rem;}
+    .checkline{font-size:1.15rem;line-height:1.9;}
+    .ops{gap:9px;}
+    .op{width:4rem;height:3.4rem;font-size:1.7rem;}
+    .box{height:2.3rem;width:3.1rem;font-size:1.3rem;}
+    .box.wide{width:4.4rem;}
+    .box.mini{height:2rem;width:2.8rem;font-size:1.15rem;}
+    .box.tiny{height:1.6rem;width:2.1rem;font-size:.95rem;}
+    .eq.k-two .mgroup.roomy{padding:1.1rem 0;}
+    .promptbar{height:6.4rem;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .dfrac.grow,.mgroup.fade,.op.shake,.slash.draw{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="wrap">
+    <div class="nav-tabs" id="navTabs"></div>
+
+    <div class="top">
+      <h1 id="title">Two-step equations</h1>
+      <div class="levels" id="levels"></div>
+    </div>
+
+    <div class="work">
+      <div class="stagebox" id="stagebox">
+        <div class="stage" id="stage">
+          <div class="scroller"><div class="eq" id="eq"></div></div>
+          <div id="panel"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="promptbar" id="promptbar"></div>
+  </div>
+</div>
+
+<!-- offscreen: a finished copy of the problem is drawn here and measured, so the
+     real one can be sized once and left alone -->
+<div class="ghost" id="ghost" aria-hidden="true"></div>
+
+<script>
+
+/* ============ shell: one score, tabs state, router ============ */
+const Shell = {
+  done:0, streak:0, active:null, activeEng:null,
+  mode:"basic", engines:{}, timers:[], recent:[],
+  counts:{basic:0, negfrac:0, fcoef:0},
+
+  title:"Two-step equations",
+  kinds:[
+    {id:"basic",   tab:"Basic",                     tally:"ax + b",            name:"Basic two-step",           eng:"two", arg:"basic",   grid:"two"},
+    {id:"negfrac", tab:"Negatives &amp; Fractions", tally:"&minus;a &divide;", name:"Negatives &amp; fractions",eng:"two", arg:"negfrac", grid:"two"},
+    {id:"fcoef",   tab:"Fraction Coefficients",     tally:"a/b x",             name:"Fraction coefficients",    eng:"two", arg:"fcoef",   grid:"two"}
+  ],
+  kind:function(id){
+    const ks=Shell.kinds;
+    for(let i=0;i<ks.length;i++) if(ks[i].id===id) return ks[i];
+    return ks[0];
+  },
+
+  later:function(ms,fn){ Shell.timers.push(setTimeout(fn,ms)); },
+  clearTimers:function(){ Shell.timers.forEach(clearTimeout); Shell.timers=[]; },
+
+  /* One size per problem. The engine works out a scale from the FINISHED
+     problem before the first line is drawn, and that scale is held for every
+     step, so the writing never changes size while the student is working. */
+  scale:1,
+  applyScale:function(){
+    const stage=document.getElementById("stage");
+    if(!stage) return;
+    const box=stage.parentNode, s=Shell.scale;
+    if(s<0.999){
+      stage.style.transform="scale("+s+")";
+      box.style.height=Math.ceil(stage.offsetHeight*s)+"px";
+    } else {
+      stage.style.transform="none";
+      box.style.height="";
+    }
+  },
+  /* how much room the whole stage has to fit into */
+  room:function(){
+    const work=document.querySelector(".work");
+    const cs=getComputedStyle(work);
+    const pad=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);
+    return {h:work.clientHeight-pad, w:work.clientWidth};
+  },
+  /* measure a finished problem off-screen without disturbing the live one */
+  ghost:function(html){
+    const g=document.getElementById("ghost");
+    g.innerHTML=html;
+    const out=[].map.call(g.children,function(c){
+      return {w:c.offsetWidth, h:c.offsetHeight};
+    });
+    g.innerHTML="";
+    return out;
+  },
+  /* re-measure only when the box around the equation actually changes size */
+  watchFit:function(){
+    let queued=false;
+    const go=function(){
+      if(queued) return;
+      queued=true;
+      requestAnimationFrame(function(){
+        queued=false;
+        if(Shell.onResize) Shell.onResize();
+      });
+    };
+    window.addEventListener("resize",go);
+    if(window.ResizeObserver){
+      const ro=new ResizeObserver(go);
+      ro.observe(document.querySelector(".work"));
+    }
+  },
+
+  /* every drill paints the same header and tags the grid so its own layout applies */
+  head:function(id){
+    const k=Shell.kind(id), c=Shell.counts;
+    document.getElementById("eq").className = "eq k-"+(k.grid||k.id);
+    document.getElementById("title").innerHTML = Shell.title;
+    document.getElementById("levels").innerHTML =
+      '<span class="score">'+Shell.done+' solved &middot; <b>'+Shell.streak+'</b> in a row</span>'
+      + '<span class="tally">'
+      + Shell.kinds.map(function(x){
+          return '<span class="'+(x.id===id?"on":"")+'" title="'+x.name+'">'+x.tally
+               + ' <b>'+c[x.id]+'</b></span>';
+        }).join("")
+      + '</span>';
+  },
+  solved:function(clean){
+    Shell.done++;
+    Shell.streak = clean ? Shell.streak+1 : 0;
+    if(Shell.active && Shell.counts[Shell.active]!==undefined) Shell.counts[Shell.active]++;
+  },
+
+  /* the same four moves on every problem: press one, then type the number */
+  OPS:[
+    ["opPlus", "add",      "+",         "Add to both sides"],
+    ["opMinus","sub",      "\u2212",    "Subtract from both sides"],
+    ["opMul",  "multiply", "(\u2009)",  "Multiply both sides"],
+    ["opDiv",  "divide",   "\u00f7",    "Divide both sides"]
+  ],
+  opsHTML:function(){
+    return '<div class="ops">'+Shell.OPS.map(function(o){
+      return '<button class="op" id="'+o[0]+'" aria-label="'+o[3]+'" title="'+o[3]+'">'+o[2]+'</button>';
+    }).join("")+'</div>';
+  },
+  bindOps:function(fn){
+    Shell.OPS.forEach(function(o){
+      const b=document.getElementById(o[0]);
+      if(b) b.onclick=function(){ fn(o[1],b); };
+    });
+  },
+  shake:function(btn){
+    if(!btn) return;
+    btn.classList.add("shake");
+    Shell.later(340,function(){ btn.classList.remove("shake"); });
+  },
+
+  /* don't let one kind of problem come up three times running in mixed mode */
+  pickKind:function(){
+    if(Shell.mode !== "mixed") return Shell.mode;
+    let pool=Shell.kinds.map(function(k){return k.id;});
+    if(Shell.recent.length>1 && Shell.recent[0]===Shell.recent[1]){
+      pool=pool.filter(function(k){return k!==Shell.recent[0];});
+    }
+    const k=pool[Math.floor(Math.random()*pool.length)];
+    Shell.recent.unshift(k); Shell.recent=Shell.recent.slice(0,2);
+    return k;
+  },
+
+  next:function(){
+    Shell.clearTimers();
+    document.getElementById("panel").innerHTML="";
+    const id=Shell.pickKind(), k=Shell.kind(id);
+    Shell.active=id; Shell.activeEng=k.eng;
+    Shell.engines[k.eng].start(k.arg);
+  },
+
+  paintTabs:function(){
+    document.getElementById("navTabs").innerHTML =
+      Shell.kinds.map(function(k){
+        return '<button class="tab-btn'+(Shell.mode===k.id?" active":"")
+             + '" data-mode="'+k.id+'">'+k.tab+'</button>';
+      }).join("")
+      + '<button class="tab-btn'+(Shell.mode==="mixed"?" active":"")+'" data-mode="mixed">Mixed</button>';
+    document.querySelectorAll("#navTabs .tab-btn").forEach(function(btn){
+      btn.onclick = function(){ Shell.setTab(btn.getAttribute("data-mode")); };
+    });
+  },
+  setTab:function(mode){
+    if(Shell.mode === mode) return;
+    Shell.mode = mode; Shell.recent=[];
+    Shell.paintTabs();
+    Shell.next();
+  }
+};
+
+Shell.paintTabs();
+Shell.watchFit();
+
+/* ================= two-step =================
+   Every two-step problem is one "constant" move and one "coefficient" move.
+   Normally the constant goes first; the wrapped form (x + 4)/5 = 3 needs the
+   coefficient cleared first, so the two steps just swap roles.               */
+Shell.engines["two"] = (function(){
+const KEY="two";
+
+/* ============ formatting ============ */
+const MINUS="\u2212", TIMES="\u00d7", DIV="\u00f7";
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function dash(s){return String(s).replace(/-/g,MINUS);}
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){const t=b;b=a%b;a=t;}return a||1;}
+/* a term written with its own sign in front:  + 5   or   \u2212 7 */
+function sgnHTML(n){
+  return '<span class="sgn">'+(n<0?MINUS:"+")+'<span>'+Math.abs(n)+'</span></span>';
+}
+
+/* ============ parsing ============ */
+function parseInt2(raw){
+  if(raw===null||raw===undefined) return null;
+  const s=String(raw).trim().replace(/[\u2212\u2013\u2014]/g,"-").replace(/\s+/g,"");
+  const m=s.match(/^([+-]?)(\d+)$/);
+  if(!m) return null;
+  return (m[1]==="-"?-1:1)*(+m[2]);
+}
+
+/* ============ problem generation ============ */
+function rint(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+const VARS=["x","y","n","m","k","t","w","p","r","v","z","c"];
+
+/* kind tells you what is attached to the variable, and so what the second move is:
+     mul   3x       -> divide by 3
+     div   x/4      -> multiply by 4
+     frac  (2/3)x   -> multiply by 3/2
+     wrap  (x+4)/5  -> multiply by 5 FIRST, then subtract 4
+   M is what the number side is worth after step one; sol is the answer.      */
+function tryGen(fl){
+  const V=pick(VARS), varLeft=Math.random()<0.5;
+
+  if(fl==="negfrac" && Math.random()<0.2){
+    const a=rint(2,8), k=rint(2,12)*(Math.random()<0.4?-1:1), C=rint(-9,9);
+    if(C===0) return null;
+    const M=a*C, sol=M-k;
+    if(sol===0 || Math.abs(sol)>60) return null;
+    return {kind:"wrap", wrapped:true, V:V, a:a, num:0, den:0, s:1,
+            k:k, C:C, M:M, sol:sol, varLeft:varLeft, varFirst:true};
+  }
+
+  let kind, a=0, num=0, den=0, s=1, M=0, sol=0;
+  if(fl==="fcoef"){
+    kind="frac";
+    do{ num=rint(1,7); den=rint(2,9); }while(num>=den || gcd(num,den)!==1);
+    s = Math.random()<0.35 ? -1 : 1;
+    const t = rint(1,5)*(Math.random()<0.4?-1:1);
+    sol = den*t; M = s*num*t;
+  } else if(fl==="basic"){
+    if(Math.random()<0.6){ kind="mul"; a=rint(2,9); sol=rint(2,12); M=a*sol; }
+    else                 { kind="div"; a=rint(2,9); M=rint(2,12); sol=a*M; }
+  } else {
+    if(Math.random()<0.6){
+      kind="mul"; a=rint(2,9)*(Math.random()<0.6?-1:1);
+      sol=rint(2,12)*(Math.random()<0.45?-1:1); M=a*sol;
+    } else {
+      kind="div"; a=rint(2,9)*(Math.random()<0.6?-1:1);
+      M=rint(2,10)*(Math.random()<0.45?-1:1); sol=a*M;
+    }
+  }
+  if(M===0 || sol===0 || Math.abs(sol)>60 || Math.abs(M)>60) return null;
+
+  const k = rint(2,15)*(Math.random()<(fl==="basic"?0.4:0.5) ? -1 : 1);
+  const C = M+k;
+  if(Math.abs(C)>75) return null;
+
+  const varFirst = kind==="div" ? Math.random()<0.75 : Math.random()<0.62;
+  return {kind:kind, wrapped:false, V:V, a:a, num:num, den:den, s:s,
+          k:k, C:C, M:M, sol:sol, varLeft:varLeft, varFirst:varFirst};
+}
+function genProblem(fl){
+  for(let i=0;i<600;i++){ const p=tryGen(fl||"basic"); if(p) return p; }
+  return {kind:"mul",wrapped:false,V:"x",a:2,num:0,den:0,s:1,
+          k:5,C:15,M:10,sol:5,varLeft:true,varFirst:true};
+}
+
+/* ============ state ============ */
+const S={
+  p:genProblem("basic"), fl:"basic", phase:"pick1", sign:1,
+  opIn:"", coefIn:"", recN:"", recD:"", mIn:"", ansIn:"",
+  simpDen:"", simpNum:"",
+  miss:"", hint:false, clean:true, firstId:null
+};
+const clearTimers=Shell.clearTimers, later=Shell.later;
+
+/* ============ where we are ============ */
+const ORDER=["pick1","op1","cancel1","simplify1","compute1",
+             "pick2","op2","cancel2","simplify2","compute2","solved","check"];
+function idx(ph){return ORDER.indexOf(ph);}
+function at(ph){return idx(S.phase)>=idx(ph);}
+function past(ph){return idx(S.phase)>idx(ph);}
+function stepNo(){return /\d$/.test(S.phase) ? +S.phase.slice(-1) : 0;}
+function subName(){return stepNo() ? S.phase.slice(0,-1) : S.phase;}
+function cs(){return S.p.wrapped?2:1;}          /* which step clears the constant */
+function ks(){return S.p.wrapped?1:2;}          /* which step clears the coefficient */
+function isConst(){return stepNo()===cs();}
+
+/* what each move works on and what it produces */
+function constIn(){return S.p.wrapped?S.p.M:S.p.C;}
+function coefIn(){return S.p.wrapped?S.p.C:S.p.M;}
+
+/* ---- cross-simplifying, set up exactly as the one-step fraction drill does it.
+   The reciprocal's bottom number and the lone number on the other side share a
+   factor, so both get struck out and rewritten smaller before multiplying.     */
+function gFac(){return gcd(S.p.num, Math.abs(coefIn()));}
+function canSimp(){return S.p.kind==="frac" && gFac()>1;}
+function redDen(){return S.p.num/gFac();}
+function redNum(){return coefIn()/gFac();}
+function simpPhase(){return "simplify"+ks();}
+function simplifying(){return S.phase===simpPhase();}
+function simpDenOK(){return parseInt2(S.simpDen)===redDen();}
+function simpNumOK(){const v=parseInt2(S.simpNum); return v!==null && v===redNum();}
+function simpOK(){return simpDenOK()&&simpNumOK();}
+function simpPartial(){
+  const dv=parseInt2(S.simpDen), nv=parseInt2(S.simpNum);
+  if(dv===null||nv===null||dv<=redDen()) return false;
+  const g=S.p.num/dv;
+  return Number.isInteger(g) && g>1 && nv===coefIn()/g;
+}
+
+/* how the cancelled pieces are marked right now */
+function cCls(){ return S.phase==="cancel"+cs() ? "cancelling" : (past("cancel"+cs())?"struck":""); }
+function kCls(){ return S.phase==="cancel"+ks() ? "cancelling" : (past("cancel"+ks())?"struck":""); }
+function slashCls(){ return S.phase==="cancel"+ks() ? "slash draw" : (past("cancel"+ks())?"slash dim":""); }
+function coefMoved(){return at("op"+ks());}     /* the coefficient move is on the page */
+function coefLive(){return S.phase==="op"+ks();} /* ...and still being typed into */
+function varSign(){
+  const p=S.p;
+  if(p.kind==="mul")  return p.a<0?-1:1;
+  if(p.kind==="frac") return p.s<0?-1:1;
+  return 1;                                     /* x/\u22123 keeps its sign under the bar */
+}
+
+/* ============ rendering pieces ============ */
+function boxHTML(id,val,extra){
+  return '<input id="'+id+'" class="box'+(extra||"")+'" value="'+esc(val)
+       + '" autocomplete="off" spellcheck="false" inputmode="text">';
+}
+function cell(html,cls){return '<div class="cell '+(cls||"")+'">'+html+'</div>';}
+function wideCell(html,cls){return '<div class="cell span2 '+(cls||"")+'">'+html+'</div>';}
+function dfrac(t,b,cls){
+  return '<span class="dfrac '+(cls||"")+'"><span class="t">'+t+'</span>'
+       + '<span class="bar"></span><span class="b">'+b+'</span></span>';
+}
+function mgroup(mult,inner,tall,cls){
+  return '<span class="mgroup'+(tall?" tall":"")+' '+(cls||"")+'">'+mult
+       + '<span class="paren">(</span>'+inner+'<span class="paren">)</span></span>';
+}
+function markK(v){
+  const c=kCls();
+  return c ? '<span class="'+c+'">'+dash(String(v))+'</span>' : dash(String(v));
+}
+function coefFracHTML(){const p=S.p; return (p.s<0?MINUS:"")+dfrac(p.num,p.den);}
+function recipHTML(marked){
+  const p=S.p, inner=(p.s<0?MINUS:"")+dfrac(p.den,p.num);
+  return marked ? '<span class="'+slashCls()+'">'+inner+'</span>' : inner;
+}
+function recipOK(){
+  const p=S.p, n=parseInt2(S.recN), d=parseInt2(S.recD);
+  if(n===null||d===null||n===0||d===0) return false;
+  return Math.abs(n)===p.den && Math.abs(d)===p.num && ((n*d>0)===(p.s>0));
+}
+function fracboxHTML(nId,dId){
+  const cls=" mini"+(recipOK()?" ok":"");
+  return '<span class="fracbox">'+boxHTML(nId,S.recN,cls)
+       + '<span class="bar"></span>'+boxHTML(dId,S.recD,cls)+'</span>';
+}
+
+/* live: the student is still filling the two small boxes in.
+   otherwise the reduced numbers are just written in, and the strokes stay. */
+function pendCls(ok,live){return live ? (ok?"slash draw":"pend") : "slash cross";}
+function recipCancelHTML(live){
+  const p=S.p;
+  const den='<span class="cx below"><span id="slD" class="'+pendCls(simpDenOK(),live)+'">'+p.num+'</span>'
+    + '<span class="redu">'
+    + (live?boxHTML("sd",S.simpDen," tiny"+(simpDenOK()?" ok":"")):String(redDen()))
+    + '</span></span>';
+  return (p.s<0?MINUS:"")+dfrac(p.den,den);
+}
+function constCancelHTML(live){
+  return '<span class="cx above"><span class="redu">'
+    + (live?boxHTML("sn",S.simpNum," tiny"+(simpNumOK()?" ok":"")):dash(String(redNum())))
+    + '</span><span id="slN" class="'+pendCls(simpNumOK(),live)+'">'
+    + dash(String(coefIn()))+'</span></span>';
+}
+
+/* the variable term as written.  inline folds its sign in ( \u22123p );
+   otherwise the sign is left to the caller, which is how 12 \u2212 3p is set. */
+function varTermHTML(inline,marked){
+  const p=S.p, V=p.V, c=kCls();
+  const mk=function(h){return (marked&&c) ? '<span class="'+c+'">'+h+'</span>' : h;};
+  if(p.kind==="wrap") return dfrac(V+sgnHTML(p.k), mk(String(p.a)));
+  if(p.kind==="mul")  return mk(inline?dash(String(p.a)):String(Math.abs(p.a)))+V;
+  if(p.kind==="div")  return dfrac(V, mk(dash(String(p.a))));
+  const f=(inline&&p.s<0?MINUS:"")+dfrac(p.num,p.den);
+  return (marked ? '<span class="'+slashCls()+'">'+f+'</span>' : f)+V;
+}
+
+/* the second move, written on both sides of whatever line it lands on */
+function coefApply(t,n){
+  const p=S.p, live=coefLive();
+  if(p.kind==="mul"){
+    return [dfrac(t, live?boxHTML("kA",S.coefIn,""):markK(p.a), "grow"),
+            dfrac(n, live?boxHTML("kB",S.coefIn,""):dash(String(p.a)), "grow")];
+  }
+  if(p.kind==="frac"){
+    const vSide = mgroup(live?fracboxHTML("nA","dA"):recipHTML(true), t, true, "fade");
+    /* once the coefficient is gone, the number side is a fraction times a number.
+       If they share a factor, cancel it there before multiplying. */
+    const nSide = (canSimp() && at(simpPhase()))
+      ? mgroup(recipCancelHTML(simplifying()), constCancelHTML(simplifying()), true, "roomy")
+      : mgroup(live?fracboxHTML("nB","dB"):recipHTML(false), n, true, "fade");
+    return [vSide, nSide];
+  }
+  return [mgroup(live?boxHTML("kA",S.coefIn,""):markK(p.a), t, true,  "fade"),
+          mgroup(live?boxHTML("kB",S.coefIn,""):dash(String(p.a)), n, false, "fade")];
+}
+
+/* ============ the equation ============ */
+function order(t1,t2,eq,n){ return S.p.varLeft ? t1+t2+eq+n : n+eq+t1+t2; }
+
+function normalRows(){
+  const p=S.p, rows=[];
+  const EQ=cell("=","eqsign"), BLANK=cell("","hide"), NOEQ=cell("","");
+
+  /* line 1 — the problem as given */
+  const cBlue = S.phase==="compute1" ? "blue" : "";
+  if(p.varFirst){
+    rows.push(order(cell(varTermHTML(true,false)), cell(sgnHTML(p.k),cCls()),
+                    EQ, cell(dash(String(p.C)),cBlue)));
+  } else {
+    rows.push(order(cell(dash(String(p.k)),cCls()),
+                    cell('<span class="sgn">'+(varSign()<0?MINUS:"+")+'</span>'+varTermHTML(false,false)),
+                    EQ, cell(dash(String(p.C)),cBlue)));
+  }
+
+  /* line 2 — the same move on both sides */
+  if(at("op1")){
+    const live=S.phase==="op1";
+    const g='<span class="sgn">'+(S.sign<0?MINUS:"+")+'</span>';
+    const vSide = live ? g+boxHTML("cA",S.opIn,"") : sgnHTML(-p.k);
+    const nSide = live ? g+boxHTML("cB",S.opIn,"") : sgnHTML(-p.k);
+    rows.push(p.varFirst
+      ? order(BLANK, cell(vSide,cCls()+" blue"), NOEQ, cell(nSide,"blue"))
+      : order(cell(vSide,cCls()+" blue"), BLANK, NOEQ, cell(nSide,"blue")));
+    if(at("cancel1")) rows.push('<div class="rule"></div>');
+  }
+
+  /* line 3 — what is left, and then the second move written over it */
+  if(at("compute1")){
+    let v=varTermHTML(true,coefMoved());
+    let n=S.phase==="compute1" ? boxHTML("mv",S.mIn,"") : dash(String(p.M));
+    if(coefMoved()){ const r=coefApply(v,n); v=r[0]; n=r[1]; }
+    const nCls = (S.phase==="compute2"||simplifying()) ? "blue" : "";
+    rows.push(p.varFirst ? order(cell(v),BLANK,EQ,cell(n,nCls))
+                         : order(BLANK,cell(v),EQ,cell(n,nCls)));
+  }
+
+  /* line 4 — the answer */
+  if(at("compute2")){
+    rows.push('<div class="spacer"></div>');
+    const ans = S.phase==="compute2" ? boxHTML("ans",S.ansIn,"")
+              : '<span class="green">'+dash(String(p.sol))+'</span>';
+    const vc = cell('<span class="'+(at("solved")?"green":"")+'">'+p.V+'</span>');
+    rows.push(p.varFirst ? order(vc,BLANK,EQ,cell(ans)) : order(BLANK,vc,EQ,cell(ans)));
+  }
+  return rows;
+}
+
+function wrappedRows(){
+  const p=S.p, rows=[];
+  const EQ=cell("=","eqsign"), BLANK=cell("","hide"), NOEQ=cell("","");
+
+  /* line 1 — the whole side sits over a, so that has to go first */
+  let v=varTermHTML(true,coefMoved()), n=dash(String(p.C));
+  if(coefMoved()){ const r=coefApply(v,n); v=r[0]; n=r[1]; }
+  const nCls = S.phase==="compute1" ? "blue" : "";
+  rows.push(p.varLeft ? wideCell(v)+EQ+cell(n,nCls) : cell(n,nCls)+EQ+wideCell(v));
+
+  /* line 2 — now an ordinary one-step problem */
+  if(at("compute1")){
+    rows.push('<div class="spacer"></div>');
+    const mHTML = S.phase==="compute1" ? boxHTML("mv",S.mIn,"") : dash(String(p.M));
+    rows.push(order(cell(p.V), cell(sgnHTML(p.k),cCls()), EQ,
+                    cell(mHTML, S.phase==="compute2"?"blue":"")));
+  }
+
+  /* line 3 — the same move on both sides */
+  if(at("op2")){
+    const live=S.phase==="op2";
+    const g='<span class="sgn">'+(S.sign<0?MINUS:"+")+'</span>';
+    const vSide = live ? g+boxHTML("cA",S.opIn,"") : sgnHTML(-p.k);
+    const nSide = live ? g+boxHTML("cB",S.opIn,"") : sgnHTML(-p.k);
+    rows.push(order(BLANK, cell(vSide,cCls()+" blue"), NOEQ, cell(nSide,"blue")));
+    if(at("cancel2")) rows.push('<div class="rule"></div>');
+  }
+
+  /* line 4 — the answer */
+  if(at("compute2")){
+    const ans = S.phase==="compute2" ? boxHTML("ans",S.ansIn,"")
+              : '<span class="green">'+dash(String(p.sol))+'</span>';
+    rows.push(order(cell('<span class="'+(at("solved")?"green":"")+'">'+p.V+'</span>'),
+                    BLANK, EQ, cell(ans)));
+  }
+  return rows;
+}
+
+function renderEquation(){
+  document.getElementById("eq").innerHTML = (S.p.wrapped?wrappedRows():normalRows()).join("");
+}
+
+/* ============ the panel ============ */
+function sideHTML(inner){                        /* the variable side, with `inner` for V */
+  const p=S.p;
+  if(p.kind==="wrap") return dfrac(inner+sgnHTML(p.k), String(p.a));
+  if(p.varFirst){
+    const t = p.kind==="mul" ? dash(String(p.a))+inner
+            : p.kind==="div" ? dfrac(inner,dash(String(p.a)))
+            : (p.s<0?MINUS:"")+dfrac(p.num,p.den)+inner;
+    return t+' '+sgnHTML(p.k);
+  }
+  const t = p.kind==="mul" ? String(Math.abs(p.a))+inner
+          : p.kind==="div" ? dfrac(inner,dash(String(p.a)))
+          : dfrac(p.num,p.den)+inner;
+  return dash(String(p.k))+' <span class="sgn">'+(varSign()<0?MINUS:"+")+'</span>'+t;
+}
+function checkLineHTML(){
+  const p=S.p;
+  const solG='<span class="green">'+dash(String(p.sol))+'</span>';
+  const inner='<span class="paren">(</span>'+solG+'<span class="paren">)</span>';
+  const C=dash(String(p.C)), eq=' <span class="eqsign">=</span> ';
+  const tick=' <span class="green">&#10003;</span>';
+  const o=sideHTML(p.V), s=sideHTML(inner);
+  return '<div class="checkline"><div class="orig">'
+    + (p.varLeft ? o+eq+C : C+eq+o) + '</div><div class="sub">'
+    + (p.varLeft ? s+eq+C+tick : C+eq+s+tick) + '</div></div>';
+}
+function renderPanel(){
+  const el=document.getElementById("panel");
+  if(subName()==="pick"){ el.innerHTML=Shell.opsHTML(); return; }
+  if(S.phase==="check"){ el.innerHTML=checkLineHTML(); return; }
+  el.innerHTML="";
+}
+
+/* ============ the prompt ============ */
+function pickHint(konst){
+  const p=S.p, V=p.V;
+  if(konst){
+    if(p.wrapped) return 'The fraction is gone, so this is an ordinary one-step problem now. '
+      + Math.abs(p.k)+' is '+(p.k<0?"subtracted":"added")+', so press '+(p.k<0?"+":MINUS)+'.';
+    return Math.abs(p.k)+' is '+(p.k<0?"subtracted":"added")+' on that side. Clear the loose number '
+      + 'first &mdash; press '+(p.k<0?"+":MINUS)+'. Whatever is attached to '+V+' comes off last.';
+  }
+  if(p.wrapped) return 'The <strong>whole</strong> side is divided by '+p.a+', the '+Math.abs(p.k)
+    + ' included, so you cannot take that off yet. Clear the denominator first &mdash; press ( ).';
+  if(p.kind==="mul") return V+' is multiplied by '+dash(String(p.a))
+    + '. Division undoes multiplication &mdash; press '+DIV+'.';
+  if(p.kind==="frac") return V+' is multiplied by a fraction. A fraction times its reciprocal is 1, '
+    + 'so multiply both sides &mdash; press ( ).';
+  return V+' is divided by '+dash(String(p.a))+'. Multiplication undoes division &mdash; press ( ).';
+}
+
+function renderPrompt(){
+  const el=document.getElementById("promptbar"), p=S.p, V=p.V;
+  const hintBtn='<button class="link" id="hintBtn">'+(S.hint?"Hide hint":"Hint")+'</button>';
+  const sub=subName(), step=stepNo(), konst=isConst();
+  let h="";
+
+  if(sub==="pick"){
+    h='<div class="prompt"><span>'+(step===1
+        ? 'This one takes <strong>two moves</strong>. What do you do to both sides first?'
+        : 'One move left. What do you do to both sides to get '+V+' alone?')+'</span>'+hintBtn;
+    if(S.hint) h+='<div class="hintline">'+pickHint(konst)+'</div>';
+    h+='</div>';
+  }
+  else if(sub==="op"){
+    if(konst){
+      h='<div class="prompt"><span>Type how much you '+(S.sign<0?"subtract from":"add to")+' both sides.</span>'+hintBtn;
+      if(S.hint) h+='<div class="hintline">Use '+Math.abs(p.k)+' &mdash; that is exactly what cancels '
+        + dash(String(p.k))+' out.</div>';
+    } else if(p.kind==="mul"){
+      h='<div class="prompt"><span>Divide both sides by the number multiplying '+V+'.</span>'+hintBtn;
+      if(S.hint) h+='<div class="hintline">Write '+dash(String(p.a))+' under each side &mdash; sign and all.</div>';
+    } else if(p.kind==="frac"){
+      h='<div class="prompt"><span>Multiply both sides by the reciprocal of</span>'
+        + '<span class="math">'+coefFracHTML()+'</span>'+hintBtn;
+      if(S.hint) h+='<div class="hintline">Flip it over: '+p.den+' on top, '+p.num+' on the bottom. '
+        + (p.s<0 ? 'The coefficient is negative, so the reciprocal is negative too &mdash; type the sign on top.'
+                 : 'The coefficient is positive, so the reciprocal is positive.')+'</div>';
+    } else {
+      h='<div class="prompt"><span>Multiply both sides by the number underneath '+V+'.</span>'+hintBtn;
+      if(S.hint) h+='<div class="hintline">Write '+dash(String(p.a))
+        + ' outside each set of parentheses &mdash; sign and all.</div>';
+    }
+    h+='</div>';
+  }
+  else if(sub==="cancel"){
+    if(konst){
+      h='<div class="prompt"><span class="math">'+dash(String(p.k))+'</span><span>and</span>'
+        + '<span class="math">'+sgnHTML(-p.k)+'</span><span>make zero, so they cancel'
+        + (p.wrapped?'':' &mdash; leaving the '+V+' term by itself')+'.</span></div>';
+    } else if(p.kind==="frac"){
+      h='<div class="prompt"><span class="math">'+recipHTML(false)+'</span><span>'+TIMES+'</span>'
+        + '<span class="math">'+coefFracHTML()+'</span>'
+        + '<span>makes 1, so the coefficient is gone &mdash; leaving '+V+' alone.</span></div>';
+    } else {
+      h='<div class="prompt"><span class="math">'+dash(String(p.a))+'</span><span>over</span>'
+        + '<span class="math">'+dash(String(p.a))+'</span>'
+        + '<span>makes 1, so they cancel &mdash; leaving '+V+(p.wrapped?' and the '+Math.abs(p.k):'')
+        + ' free of the fraction.</span></div>';
+    }
+  }
+  else if(sub==="simplify"){
+    const M=coefIn(), g=gFac();
+    h='<div class="prompt"><span><strong>Simplify before you multiply.</strong> '
+      + p.num+' and '+Math.abs(M)+' share a factor &mdash; divide them both by it.</span>'+hintBtn;
+    if(S.hint) h+='<div class="hintline"><span>'+p.num+' &divide; '+g+' = '+redDen()+', and '
+      + Math.abs(M)+' &divide; '+g+' = '+Math.abs(redNum())+'.'
+      + (M<0?' The number stays negative.':'')
+      + (redDen()>1?' They don\'t cancel all the way &mdash; '+redDen()+' is left underneath.':'')
+      + '</span></div>';
+    if(simpPartial()) h+='<div class="noteline">That is a common factor, but not the biggest one '
+      + '&mdash; those two can still be cancelled further.</div>';
+    h+='</div>';
+  }
+  else if(sub==="compute"){
+    if(konst){
+      h='<div class="prompt"><span>Combine the blue side:</span><span class="math blue">'
+        + dash(String(constIn()))+' '+sgnHTML(-p.k)+'</span>'+hintBtn;
+      if(S.hint) h+='<div class="hintline">'+(p.k>0
+        ? 'Taking '+Math.abs(p.k)+' away moves down the number line.'
+        : 'Adding '+Math.abs(p.k)+' moves up the number line.')+'</div>';
+    } else {
+      const M=coefIn(), Md=dash(String(M));
+      /* after cancelling, the numbers on the page are the small ones */
+      const cut = (p.s<0?MINUS:"")+(redDen()>1?dfrac(p.den,redDen()):String(p.den))
+                + ' '+TIMES+' '+dash(String(redNum()));
+      const expr = p.kind==="mul"  ? Md+' '+DIV+' '+dash(String(p.a))
+                 : p.kind==="frac" ? (canSimp() ? cut : recipHTML(false)+' '+TIMES+' '+Md)
+                                   : dash(String(p.a))+' '+TIMES+' '+Md;
+      h='<div class="prompt"><span>Now finish the other side:</span>'
+        + '<span class="math blue">'+expr+'</span>'+hintBtn;
+      if(S.hint){
+        const diff = p.kind==="frac" ? ((p.s<0)!==(M<0)) : ((p.a<0)!==(M<0));
+        h+='<div class="hintline">'+(p.kind==="mul"
+            ? 'How many '+Math.abs(p.a)+'s fit into '+Math.abs(M)+'? '
+            : p.kind==="frac"
+              ? (canSimp()
+                  ? 'Because you cancelled first these are small numbers: '
+                    + p.den+' '+TIMES+' '+Math.abs(redNum())
+                    + (redDen()>1?', over '+redDen():'')+'. '
+                  : Math.abs(M)+' &divide; '+p.num+' = '+(Math.abs(M)/p.num)+', then '+TIMES+' '+p.den+'. ')
+              : Math.abs(p.a)+' groups of '+Math.abs(M)+'. ')
+          + (diff ? 'One number is negative, so the answer is negative.'
+                  : 'Both signs match, so the answer is positive.')+'</div>';
+      }
+    }
+    h+='</div>';
+  }
+  else if(S.phase==="solved"){
+    h='<div class="prompt"><span class="green"><strong>That\'s '+V+'. Now check it.</strong></span></div>';
+  }
+  else if(S.phase==="check"){
+    h='<div class="row-between"><div class="prompt"><span>Put</span><span class="math">'
+      + dash(String(p.sol))+'</span><span>back in for '+V+' and both sides match.</span></div>'
+      + '<button class="next" id="nextBtn">Next problem &rarr;</button></div>';
+  }
+  if(S.miss) h+='<div class="missline">'+S.miss+'</div>';
+  if(S.phase!=="check") h+='<div><button class="link skip" id="skipBtn">Skip</button></div>';
+  el.innerHTML=h;
+}
+
+/* ---- one size, worked out before the first line is drawn ----
+   The tallest the page ever gets is the check step: every line of working is
+   down, plus the substitution underneath. So each tab is sized from the tallest
+   problem it can throw, drawn off-screen and measured. Every problem in that
+   tab is then written at that one size — nothing resizes mid-solve, and nothing
+   resizes between problems either. */
+/* Templates, not real problems: every number is pushed to the widest the
+   generator can produce for that kind, so the measurement is an upper bound.
+   They do not have to be arithmetically consistent — only the drawn size counts. */
+const TALL={
+  basic:[
+    {kind:"div",wrapped:false,V:"m",a:9, num:0,den:0,s:1,k:-15,C:-27,M:-12,sol:-60,varLeft:false,varFirst:false},
+    {kind:"mul",wrapped:false,V:"m",a:9, num:0,den:0,s:1,k:-15,C:-75,M:-60,sol:-12,varLeft:false,varFirst:false}
+  ],
+  negfrac:[
+    {kind:"wrap",wrapped:true,V:"m",a:8, num:0,den:0,s:1,k:-12,C:-9, M:-72,sol:-60,varLeft:false,varFirst:true},
+    {kind:"div", wrapped:false,V:"m",a:-9,num:0,den:0,s:1,k:-15,C:-27,M:-12,sol:-60,varLeft:false,varFirst:false},
+    {kind:"mul", wrapped:false,V:"m",a:-9,num:0,den:0,s:1,k:-15,C:-75,M:-60,sol:-12,varLeft:false,varFirst:false}
+  ],
+  fcoef:[
+    {kind:"frac",wrapped:false,V:"m",num:7,den:9,s:-1,k:-15,C:-78,M:-63,sol:-81,varLeft:false,varFirst:false}
+  ]
+};
+function tallList(){
+  if(Shell.mode==="mixed"){
+    return TALL.basic.concat(TALL.negfrac, TALL.fcoef);
+  }
+  return TALL[Shell.mode] || TALL.basic;
+}
+function lockScale(){
+  const room=Shell.room();
+  if(!room.h || !room.w){ Shell.scale=1; return; }
+  const saveP=S.p, savePhase=S.phase, saveMiss=S.miss;
+  let raw=1;
+  tallList().forEach(function(cand){
+    S.p=cand; S.phase="check"; S.miss="";
+    const m=Shell.ghost('<div class="stage">'
+      + '<div class="scroller"><div class="eq k-two">'
+      + (cand.wrapped?wrappedRows():normalRows()).join("")
+      + '</div></div><div>'+checkLineHTML()+'</div></div>');
+    if(m.length && m[0].h && m[0].w){
+      raw=Math.min(raw, room.w/m[0].w, room.h/m[0].h);
+    }
+  });
+  S.p=saveP; S.phase=savePhase; S.miss=saveMiss;
+  /* a floor, so a very short window shrinks the writing only so far */
+  Shell.scale=Math.max(raw, 0.5);
+  document.querySelector(".work").style.overflowY = (raw < Shell.scale-0.001) ? "auto" : "hidden";
+}
+
+function render(){
+  Shell.head(Shell.active); renderEquation(); renderPanel(); renderPrompt(); attach();
+  Shell.applyScale(); focusFirst();
+}
+function focusFirst(){
+  later(60,function(){
+    const el=S.firstId && document.getElementById(S.firstId);
+    if(el) el.focus();
+  });
+}
+
+/* ============ flow ============ */
+function setPhase(ph){
+  clearTimers();
+  S.phase=ph; S.miss="";
+  S.firstId = ph==="op"+cs()   ? "cA"
+            : ph==="op"+ks()   ? (S.p.kind==="frac" ? (parseInt2(S.recN)===null?"nA":"dA") : "kA")
+            : ph===simpPhase() ? "sd"
+            : ph==="compute1"  ? "mv"
+            : ph==="compute2"  ? "ans" : null;
+  render();
+  if(ph==="cancel1") later(1700,function(){ setPhase(afterCancel(1)); });
+  if(ph==="cancel2") later(1750,function(){ setPhase(afterCancel(2)); });
+  if(ph==="solved")  later(850, function(){ setPhase("check"); });
+}
+/* the coefficient step gets a cancelling stop first when there is one to make */
+function afterCancel(step){
+  return (step===ks() && canSimp()) ? "simplify"+step : "compute"+step;
+}
+function finish(){ Shell.solved(S.clean); setPhase("solved"); }
+function flagMiss(msg){
+  S.clean=false; S.miss=msg; renderPrompt(); attach();
+  later(3000,function(){ S.miss=""; renderPrompt(); attach(); });
+}
+function missMessage(){
+  const sub=subName();
+  if(sub==="op") return isConst()
+    ? "That will not cancel it out \u2014 use the same size number that is in the way."
+    : (S.p.kind==="frac" ? "Not quite \u2014 flip the fraction over, and keep the sign in mind."
+                         : "Not quite \u2014 check the number and its sign, then try again.");
+  if(sub==="simplify") return "Divide both numbers by the same factor, then write what each one becomes.";
+  if(sub==="compute") return "Not quite \u2014 check the size and the sign, then try again.";
+  return "";
+}
+function nextProblem(){ Shell.next(); }
+function begin(fl){
+  clearTimers();
+  S.fl = fl || "basic";
+  S.p = genProblem(S.fl);
+  S.phase="pick1"; S.sign=1;
+  S.opIn=""; S.coefIn=""; S.recN=""; S.recD=""; S.mIn=""; S.ansIn="";
+  S.simpDen=""; S.simpNum="";
+  S.hint=false; S.clean=true; S.miss=""; S.firstId=null;
+  lockScale();
+  render();
+}
+/* if the window changes size, work the one size out again for the problem in hand */
+Shell.onResize=function(){
+  if(Shell.activeEng!==KEY || !S.p) return;
+  lockScale(); Shell.applyScale();
+};
+
+/* ============ input handling ============ */
+function attach(){
+  const hb=document.getElementById("hintBtn");
+  if(hb) hb.onclick=function(){ S.hint=!S.hint; renderPrompt(); attach(); };
+  const sb=document.getElementById("skipBtn"); if(sb) sb.onclick=nextProblem;
+  const nb=document.getElementById("nextBtn"); if(nb) nb.onclick=nextProblem;
+  Shell.bindOps(chooseOp);
+
+  bind("cA",onConst); bind("cB",onConst);
+  bind("kA",onCoef);  bind("kB",onCoef);
+  bind("nA",onRecN);  bind("nB",onRecN);
+  bind("dA",onRecD);  bind("dB",onRecD);
+  bind("sd",onSimpDen); bind("sn",onSimpNum);
+  bind("mv",onMid);   bind("ans",onAns);
+}
+function bind(id,handler){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.oninput=handler;
+  el.onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); flagMiss(missMessage()); } };
+}
+function mirror(ids,val){
+  ids.forEach(function(id){
+    const b=document.getElementById(id);
+    if(b && b.value!==val) b.value=val;
+  });
+}
+
+function wantOp(step){
+  const p=S.p;
+  if(step===cs()) return p.k>0 ? "sub" : "add";
+  return p.kind==="mul" ? "divide" : "multiply";
+}
+function wrongOpMsg(step,pressed){
+  const p=S.p, V=p.V;
+  if(step===cs()){
+    if(pressed==="add"||pressed==="sub")
+      return "That moves the wrong way \u2014 it makes that side bigger instead of clearing the "
+        + (p.k<0?"subtraction":"addition")+".";
+    if(p.wrapped) return "The fraction is already cleared. What is left is a loose "+Math.abs(p.k)
+      + " \u2014 undo it by adding or subtracting.";
+    return "Not yet \u2014 the loose "+Math.abs(p.k)+" has to go first. Undo it by adding or "
+      + "subtracting, then deal with what is attached to "+V+".";
+  }
+  if(pressed==="add"||pressed==="sub"){
+    if(p.wrapped) return "Careful \u2014 the whole side is over "+p.a+", so the "+Math.abs(p.k)
+      + " is not loose yet. Multiply both sides by "+p.a+" first.";
+    return "The loose number is already gone. What is left is "+V+" "
+      + (p.kind==="mul"  ? "multiplied by "+dash(String(p.a))
+       : p.kind==="frac" ? "multiplied by a fraction"
+                         : "divided by "+dash(String(p.a)))
+      + " \u2014 adding or subtracting will not free it.";
+  }
+  return p.kind==="mul"
+    ? "That side is already a multiplication \u2014 multiplying again will not free "+V+"."
+    : (p.kind==="frac"
+       ? "Dividing by a fraction is the hard way \u2014 flipping it over and multiplying does the "
+         + "same job. Press ( )."
+       : V+" is already being divided \u2014 dividing again will not free it.");
+}
+function chooseOp(kind,btn){
+  const step = S.phase==="pick1" ? 1 : 2;
+  if(kind===wantOp(step)){
+    if(step===cs()){ S.sign = kind==="sub" ? -1 : 1; S.opIn=""; }
+    else { S.coefIn=""; S.recN=""; S.recD=""; S.simpDen=""; S.simpNum=""; }
+    S.hint=false; setPhase("op"+step);
+    return;
+  }
+  S.clean=false; Shell.shake(btn);
+  flagMiss(wrongOpMsg(step,kind));
+}
+
+function paint(ids,ok,base){
+  const cls=base+(ok?" ok":"");
+  ids.forEach(function(id){ const b=document.getElementById(id); if(b) b.className=cls; });
+}
+function onConst(e){
+  S.opIn=e.target.value; mirror(["cA","cB"],S.opIn);
+  const v=parseInt2(S.opIn), ok=(v!==null && Math.abs(v)===Math.abs(S.p.k));
+  paint(["cA","cB"],ok,"box");
+  clearTimers();
+  if(ok) later(300,function(){ S.hint=false; setPhase("cancel"+cs()); });
+}
+function onCoef(e){
+  S.coefIn=e.target.value; mirror(["kA","kB"],S.coefIn);
+  const v=parseInt2(S.coefIn), ok=(v!==null && v===S.p.a);
+  paint(["kA","kB"],ok,"box");
+  clearTimers();
+  if(ok) later(300,function(){ S.hint=false; setPhase("cancel"+ks()); });
+}
+function onRecN(e){
+  S.recN=e.target.value; mirror(["nA","nB"],S.recN);
+  paint(["nA","nB","dA","dB"],recipOK(),"box mini");
+  clearTimers();
+  if(recipOK()){ later(320,function(){ S.hint=false; setPhase("cancel"+ks()); }); return; }
+  const n=parseInt2(S.recN);
+  if(n!==null && Math.abs(n)===S.p.den && parseInt2(S.recD)===null){
+    const d=document.getElementById(e.target.id==="nA"?"dA":"dB");
+    if(d) d.focus();
+  }
+}
+function onRecD(e){
+  S.recD=e.target.value; mirror(["dA","dB"],S.recD);
+  paint(["nA","nB","dA","dB"],recipOK(),"box mini");
+  clearTimers();
+  if(recipOK()) later(320,function(){ S.hint=false; setPhase("cancel"+ks()); });
+}
+function setCls(el,cls){ if(el && el.className!==cls) el.className=cls; }
+function paintSimp(){
+  if(!simplifying()) return;
+  setCls(document.getElementById("sd"),"box tiny"+(simpDenOK()?" ok":""));
+  setCls(document.getElementById("sn"),"box tiny"+(simpNumOK()?" ok":""));
+  setCls(document.getElementById("slD"),pendCls(simpDenOK(),true));
+  setCls(document.getElementById("slN"),pendCls(simpNumOK(),true));
+  renderPrompt(); attach();
+}
+function onSimpDen(e){
+  S.simpDen=e.target.value;
+  paintSimp(); clearTimers();
+  if(simpOK()){ later(420,function(){ S.hint=false; setPhase("compute"+ks()); }); return; }
+  if(simpDenOK() && parseInt2(S.simpNum)===null){
+    const sn=document.getElementById("sn"); if(sn) sn.focus();
+  }
+}
+function onSimpNum(e){
+  S.simpNum=e.target.value;
+  paintSimp(); clearTimers();
+  if(simpOK()) later(420,function(){ S.hint=false; setPhase("compute"+ks()); });
+}
+function onMid(e){
+  S.mIn=e.target.value;
+  const v=parseInt2(S.mIn);
+  clearTimers();
+  if(v!==null && v===S.p.M) later(300,function(){ S.hint=false; setPhase("pick2"); });
+}
+function onAns(e){
+  S.ansIn=e.target.value;
+  const v=parseInt2(S.ansIn);
+  clearTimers();
+  if(v!==null && v===S.p.sol) later(280,finish);
+}
+
+document.addEventListener("keydown",function(e){
+  if(Shell.activeEng!==KEY) return;
+  if(e.key==="Enter" && S.phase==="check") nextProblem();
+});
+
+return {start:begin};
+
+})();
+
+Shell.next();
+</script>
+</body>
+</html>
