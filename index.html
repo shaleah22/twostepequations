@@ -14,63 +14,47 @@
   }
   *{box-sizing:border-box;}
   html,body{height:100%;margin:0;}
+  /* scale everything with the screen so the problem fills it */
+  html{font-size:clamp(16px,1.15vw + .6vh,26px);}
   body{
     background:var(--page); color:var(--ink);
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-family:Tahoma,Verdana,Geneva,sans-serif;
     -webkit-font-smoothing:antialiased;
   }
   .app{height:100%;display:flex;flex-direction:column;overflow:hidden;padding:12px 16px;}
-  .wrap{width:100%;max-width:52rem;margin:0 auto;display:flex;flex-direction:column;height:100%;min-height:0;}
-
-  /* nav tabs */
-  .nav-tabs{display:flex;gap:6px;margin-bottom:12px;border-bottom:2px solid var(--edge);padding-bottom:2px;}
-  .tab-btn{
-    background:none; border:none; padding:8px 14px; font-size:.9rem; font-weight:600;
-    color:var(--muted); cursor:pointer; border-radius:6px 6px 0 0; transition:all .15s ease;
-  }
-  .tab-btn:hover{color:var(--ink); background:var(--edge);}
-  .tab-btn.active{color:var(--blue); border-bottom:3px solid var(--blue); background:#fff;}
-
-  /* header */
-  .top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;flex-shrink:0;}
-  h1{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.18em;margin:0;}
-  .levels{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .score{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;}
-  .score b{color:var(--green);}
-  /* how many of each kind have been solved; the current kind is highlighted */
-  .tally{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:.72rem;
-         color:var(--faint);font-variant-numeric:tabular-nums;}
-  .tally span{white-space:nowrap;}
-  .tally b{color:var(--muted);font-weight:600;}
-  .tally .on,.tally .on b{color:var(--blue);}
+  .wrap{width:100%;max-width:64rem;margin:0 auto;display:flex;flex-direction:column;height:100%;min-height:0;}
 
   /* work area */
-  .ghost{position:absolute;left:-10000px;top:0;visibility:hidden;pointer-events:none;
-         width:max-content;}
+  .ghost{position:absolute;left:-10000px;top:0;visibility:hidden;pointer-events:none;width:max-content;}
   .work{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
         justify-content:safe center;padding:6px 0;overflow:hidden;}
   /* the equation and the panel under it scale together as one block, so the
      size is set once per problem and nothing shifts underfoot mid-solve */
   .stagebox{display:flex;justify-content:center;align-items:flex-start;flex-shrink:0;}
-  .stage{display:flex;flex-direction:column;align-items:center;gap:14px;transform-origin:top center;}
+  /* the working on the left, the buttons and the check beside it */
+  .stage{display:flex;flex-direction:row;align-items:flex-start;gap:3rem;transform-origin:top center;}
+  .stage-main{display:flex;justify-content:center;}
+  .stage-side{display:flex;flex-direction:column;align-items:center;gap:1.4rem;}
+  /* tall, narrow screens: stack the two columns instead */
+  @media (max-aspect-ratio:1/1){ .stage{flex-direction:column;align-items:center;gap:18px;} }
+
   .scroller{display:flex;justify-content:center;}
   .scroller > .eq{flex:0 0 auto;}
   .eq{display:grid;column-gap:30px;row-gap:10px;width:max-content;margin:0 auto;
-      transform-origin:top center;
-      font-family:Georgia,"Times New Roman",serif;font-size:1.85rem;}
+      font-family:Tahoma,Verdana,Geneva,sans-serif;font-size:2.4rem;}
   /* two-step needs both shapes at once: four columns for the line that still
      carries a constant, and room for a fraction bar on the line below it */
-  .eq.k-two{grid-template-columns:auto auto auto auto;row-gap:8px;font-size:1.7rem;column-gap:22px;}
-  .eq.k-two .cell{gap:10px;min-height:3rem;}
+  .eq.k-two{grid-template-columns:auto auto auto auto;row-gap:10px;column-gap:26px;}
+  .eq.k-two .cell{gap:10px;min-height:3.4rem;}
   .cell.span2{grid-column:span 2;}
   .eq.k-two .dfrac{font-size:1em;}
   .eq.k-two .dfrac > .t,.eq.k-two .dfrac > .b{padding:0 8px;gap:.28em;}
-  .eq.k-two .dfrac > .bar{min-width:3.2rem;border-top-color:var(--line);}
+  .eq.k-two .dfrac > .bar{min-width:4.2rem;border-top-color:var(--line);}
   .eq.k-two .mgroup{gap:6px;}
   .eq.k-two .mgroup.tall .paren{font-size:2.2em;}
   /* room above and below for the cancelled numbers, without wasting a whole line */
-  .eq.k-two .mgroup.roomy{padding:1.3rem 0;}
-  .cell{min-height:3.6rem;padding:2px 0;display:flex;align-items:center;justify-content:center;gap:6px;
+  .eq.k-two .mgroup.roomy{padding:1.8rem 0;}
+  .cell{min-height:4rem;padding:2px 0;display:flex;align-items:center;justify-content:center;gap:6px;
         transition:opacity .7s ease-out;}
   .rule{grid-column:1 / -1;height:2px;margin:5px 0;border-top:2px solid var(--line);}
   /* same row break as .rule, but with no line drawn: nothing is being summed */
@@ -84,17 +68,7 @@
   .cancelling{text-decoration:line-through;text-decoration-thickness:2px;opacity:.6;}
   .struck{text-decoration:line-through;text-decoration-thickness:2px;opacity:.25;}
 
-  /* small inline fractions, used while adding and subtracting */
-  .stack{display:inline-flex;flex-direction:column;align-items:center;margin:0 3px;
-         font-size:.66em;line-height:1.18;vertical-align:-.44em;}
-  .stack .t,.stack .b{padding:0 5px;}
-  .stack .bar{width:100%;border-top:2px solid currentColor;margin:.14em 0;}
   .num{display:inline-flex;align-items:center;vertical-align:middle;}
-  .num .whole{margin-left:2px;}
-  /* a mixed number: whole part beside a smaller stacked fraction */
-  .mixnum{display:inline-flex;align-items:center;vertical-align:middle;}
-  .mixnum .whole{line-height:1;}
-  .mixnum .dfrac{font-size:.6em;margin-left:4px;}
   .sgn{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;}
 
   /* full-size fractions, used when multiplying and dividing */
@@ -131,7 +105,6 @@
 
   /* parenthesised group: multiplying both sides */
   .mgroup{display:inline-flex;align-items:center;gap:9px;}
-  .mgroup.roomy{padding:1.9rem 0;}
   .paren{font-size:1.35em;line-height:1;color:var(--line);}
   .mgroup.tall .paren{font-size:2.6em;font-weight:300;}
   .mgroup.fade{animation:grow .35s ease-out;}
@@ -139,72 +112,74 @@
   @keyframes draw{from{background-size:0% 100%;}to{background-size:100% 100%;}}
 
   /* inputs */
-  .box{height:2.5rem;width:3.5rem;border:2px solid var(--blue-b);background:var(--blue-bg);color:var(--blue);
-       border-radius:6px;text-align:center;font-family:Georgia,"Times New Roman",serif;font-size:1.5rem;
+  .box{height:2.9rem;width:3.9rem;border:2px solid var(--blue-b);background:var(--blue-bg);color:var(--blue);
+       border-radius:6px;text-align:center;font-family:Tahoma,Verdana,Geneva,sans-serif;font-size:1.9rem;
        outline:none;transition:border-color .15s,background .15s;}
-  .box.wide{width:5rem;}
-  .box.small{font-size:1.25rem;}
-  .box.mini{height:2.15rem;width:3.2rem;font-size:1.25rem;}
-  .box.tiny{height:1.8rem;width:2.4rem;font-size:1.05rem;border-radius:5px;}
+  .box.wide{width:5.4rem;}
+  .box.small{font-size:1.4rem;}
+  .box.mini{height:2.4rem;width:3.4rem;font-size:1.4rem;}
+  .box.tiny{height:1.9rem;width:2.6rem;font-size:1.1rem;border-radius:5px;}
   .box:focus{border-color:var(--blue);background:#fff;}
   .box.bad{border-color:#fb7185;background:var(--rose-bg);color:var(--rose);}
   .box.ok{border-color:#10b981;background:var(--green-bg);color:var(--green);}
   .preview{color:var(--faint);}
 
-  /* fraction-shaped input: box above the denominator */
-  .fracin{display:inline-flex;flex-direction:column;align-items:center;gap:4px;}
-  .fracin .bar2{width:4rem;border-top:2px solid var(--line);}
-  .fracin .den{color:#475569;line-height:1;font-family:Georgia,serif;}
-
   /* operation buttons */
   .ops{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px;}
-  .op{width:5.2rem;height:4.2rem;border:2px solid var(--edge);background:#fff;color:var(--line);
-      border-radius:12px;cursor:pointer;font-family:Georgia,"Times New Roman",serif;font-size:2.1rem;
+  .op{width:5.6rem;height:4.4rem;border:2px solid var(--edge);background:#fff;color:var(--line);
+      border-radius:12px;cursor:pointer;font-family:Tahoma,Verdana,Geneva,sans-serif;font-size:2.3rem;
       line-height:1;display:flex;align-items:center;justify-content:center;
       transition:border-color .15s,background .15s,transform .1s;}
   .op:hover{border-color:var(--blue-b);background:var(--blue-bg);color:var(--blue);}
   .op:active{transform:translateY(1px);}
   .op:focus-visible{outline:3px solid var(--blue-b);outline-offset:2px;}
   .op.shake{animation:shake .32s;border-color:#fb7185;background:var(--rose-bg);color:var(--rose);}
+  /* the key that picks this move, in the corner of the button */
+  .op{position:relative;}
+  .op .key{position:absolute;right:7px;bottom:5px;font-size:.8rem;line-height:1;color:var(--faint);}
+  /* a typed key flashes its button the way a click would */
+  .op.kbd{border-color:var(--blue-b);background:var(--blue-bg);color:var(--blue);transform:translateY(1px);}
+  /* first part of each move: click the part of the equation that's in the way */
+  .tgt{display:inline-flex;align-items:center;justify-content:center;gap:inherit;padding:2px 8px;
+       border-radius:10px;transition:border-color .15s,background .15s,color .15s;}
+  /* a number stuck to its variable (3w): keep the two together, highlight space only on the outside */
+  .tpair{display:inline-flex;align-items:center;}
+  .tpair > .tgt:first-child{padding-right:1px;}
+  .tpair > .tgt:last-child{padding-left:1px;}
+  .tgt[role=button]{cursor:pointer;}
+  .tgt[role=button]:hover{background:#fef9c3;}
+  .tgt[role=button]:focus-visible{outline:3px solid var(--blue-b);outline-offset:2px;}
+  .tgt.picked{background:#fde047;color:var(--ink);}
+  .tgt.shake{animation:shake .32s;background:var(--rose-bg);color:var(--rose);}
   @keyframes shake{0%,100%{transform:none;}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
 
-  .panel{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;
-         font-family:Georgia,serif;font-size:1.35rem;}
-  .panel .lbl{font-size:.85rem;color:var(--muted);
-              font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;}
-  .checkline{width:100%;text-align:center;font-family:Georgia,serif;font-size:1.42rem;line-height:2.1;}
+  .checkline{width:100%;text-align:center;font-family:Tahoma,Verdana,Geneva,sans-serif;font-size:1.7rem;line-height:2.1;}
   .checkline .orig{color:var(--faint);}
   .checkline .sub{margin-top:12px;}
 
   /* prompt bar */
-  /* fixed height on purpose: a hint or a nudge appearing must not change how
-     much room the equation has, or the writing would resize mid-problem */
+  /* fixed height on purpose: a message appearing must not change how much
+     room the equation has, or the writing would resize mid-problem */
   .promptbar{flex-shrink:0;border-top:1px solid var(--edge);padding-top:12px;padding-bottom:4px;
-             height:7rem;overflow-y:auto;}
-  .prompt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;color:#334155;font-size:.98rem;}
-  .prompt .math{font-family:Georgia,serif;}
+             height:5rem;overflow-y:auto;}
+  .prompt{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;color:#334155;font-size:1.35rem;}
+  .prompt .math{font-family:Tahoma,Verdana,Geneva,sans-serif;}
   .prompt strong{font-weight:600;}
-  .link{background:none;border:none;padding:0;color:var(--muted);font-size:.85rem;font-family:inherit;
-        text-decoration:underline;text-underline-offset:4px;cursor:pointer;}
-  .link:hover{color:var(--ink);}
   .hintline{width:100%;font-size:.85rem;color:#475569;display:flex;flex-wrap:wrap;align-items:center;gap:5px;}
-  .missline{margin-top:4px;font-size:.85rem;color:var(--rose);}
-  .noteline{margin-top:4px;font-size:.85rem;color:var(--muted);}
-  .next{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 20px;
-        font-size:.95rem;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .missline{margin-top:4px;font-size:1.05rem;color:var(--rose);}
+  .noteline{margin-top:4px;font-size:1.05rem;color:var(--muted);}
+  .next{background:var(--ink);color:#fff;border:none;border-radius:8px;padding:12px 24px;
+        font-size:1.1rem;font-weight:500;cursor:pointer;font-family:inherit;white-space:nowrap;}
   .next:hover{background:#1e293b;}
-  .skip{margin-top:4px;font-size:.72rem;color:var(--faint);}
-  .row-between{display:flex;align-items:center;justify-content:between;gap:12px;width:100%;}
+  .row-between{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;}
 
   @media (max-width:640px){
-    .nav-tabs{overflow-x:auto;}
-    .tab-btn{padding:6px 10px;font-size:.8rem;white-space:nowrap;}
     .eq{font-size:1.45rem;column-gap:15px;}
     .eq.k-two{font-size:1.3rem;column-gap:13px;row-gap:7px;}
     .eq.k-two .cell{min-height:2.7rem;gap:7px;}
     .eq.k-two .dfrac > .bar{min-width:2.6rem;}
+    .eq.k-two .mgroup.roomy{padding:1.1rem 0;}
     .cell{min-height:3.1rem;}
-    h1{font-size:.9rem;}
     .checkline{font-size:1.15rem;line-height:1.9;}
     .ops{gap:9px;}
     .op{width:4rem;height:3.4rem;font-size:1.7rem;}
@@ -212,29 +187,92 @@
     .box.wide{width:4.4rem;}
     .box.mini{height:2rem;width:2.8rem;font-size:1.15rem;}
     .box.tiny{height:1.6rem;width:2.1rem;font-size:.95rem;}
-    .eq.k-two .mgroup.roomy{padding:1.1rem 0;}
-    .promptbar{height:6.4rem;}
+    .prompt{font-size:1.1rem;}
+    .promptbar{height:5.6rem;}
+    .stage{flex-direction:column;align-items:center;gap:18px;}
   }
   @media (prefers-reduced-motion:reduce){
     .dfrac.grow,.mgroup.fade,.op.shake,.slash.draw{animation:none;}
   }
+
+  /* ---------- problem counter + turn in ---------- */
+  .drillhead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 16px;
+    flex-shrink:0;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--edge);}
+  .dh-name{font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);}
+  .dh-right{display:inline-flex;align-items:center;gap:12px;}
+  .dh-count{font-size:1rem;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .turnin-link{font-family:inherit;font-weight:700;font-size:.75rem;padding:4px 12px;border-radius:8px;cursor:pointer;
+    background:#fff;color:var(--blue);border:2px solid #bfdbfe;}
+  .turnin-link:hover{border-color:#93c5fd;background:var(--blue-bg);}
+  .off{display:none !important;}
+
+  /* ---------- the turn-in page ---------- */
+  .turnin{position:fixed;inset:0;z-index:100;overflow:auto;background:#f4f6f9;font-size:16px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-weight:600;color:#1a202c;
+    -webkit-user-select:text;user-select:text;}
+  .turnin button{font-family:inherit;font-weight:800;border-radius:10px;cursor:pointer;border:none;transition:background .2s;}
+  .turnin button:focus-visible{outline:3px solid #1a365d;outline-offset:3px;}
+  .check-btn{color:#fff;background-color:#2b6cb0;padding:12px 30px;font-size:1.1em;}
+  .check-btn:hover{background-color:#2c5282;}
+  .ti-inner{max-width:640px;margin:clamp(12px,4vh,40px) auto;padding:28px clamp(18px,4vw,36px) 32px;
+    background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,.08);}
+  .ti-inner h2{color:#1a365d;font-size:1.6em;font-weight:800;margin:0 0 20px;letter-spacing:-.01em;}
+  .ti-inner h3{color:#1a365d;font-size:1.05em;font-weight:800;margin:26px 0 10px;}
+  .ti-sub{color:#718096;font-weight:600;line-height:1.55;margin:0 0 20px;}
+  .ti-recap{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;}
+  .ti-recap > div{border:2px solid #e2e8f0;border-radius:12px;padding:10px 14px;color:#718096;font-size:.85em;}
+  .ti-recap b{display:block;color:#1a202c;font-size:1.9em;font-weight:800;}
+  .ti-log{max-height:320px;overflow:auto;margin-top:16px;padding:6px 0;border-top:2px solid #e2e8f0;border-bottom:2px solid #e2e8f0;}
+  .ti-empty{color:#a0aec0;margin-top:14px;}
+  .ti-row{display:flex;gap:10px;align-items:baseline;padding:5px 2px;font-size:1.02em;}
+  .ti-n{color:#a0aec0;min-width:28px;text-align:right;font-size:.85em;}
+  .ti-q{flex:1;min-width:0;overflow-wrap:anywhere;}
+  .ti-arrow{color:#a0aec0;padding:0 4px;}
+  .ti-k{font-size:.8em;white-space:nowrap;color:#38a169;}
+  .ti-k.retry{color:#dd6b20;}
+  #gform{margin-top:4px;}
+  .ti-warn{background:#fefcbf;color:#744210;border-radius:10px;padding:11px 14px;margin-bottom:18px;line-height:1.55;font-size:.92em;}
+  .ti-field{margin-bottom:14px;}
+  .ti-field label{display:block;margin-bottom:6px;color:#2d3748;}
+  .ti-field label em{font-style:normal;color:#a0aec0;font-weight:600;font-size:.88em;}
+  .ti-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-right:8px;
+    border-radius:50%;background:#2b6cb0;color:#fff;font-size:.8em;}
+  .ti-field input{font-family:inherit;font-size:1.05em;font-weight:700;color:#1a202c;width:100%;
+    border:2px solid #cbd5e0;border-radius:10px;padding:9px 12px;background:#fff;}
+  .ti-field input:focus{outline:none;border-color:#3182ce;}
+  .ti-check{border:2px solid #e2e8f0;border-radius:12px;padding:11px 14px;margin:4px 0 16px;background:#f7fafc;}
+  .ti-check .head{color:#718096;font-size:.88em;margin-bottom:8px;}
+  .ti-check .row{display:flex;gap:12px;align-items:baseline;margin-bottom:4px;}
+  .ti-check .row:last-child{margin-bottom:0;padding-top:6px;border-top:2px solid #e2e8f0;}
+  .ti-check .t{color:#a0aec0;min-width:88px;font-size:.85em;}
+  .ti-check .v{color:#1a202c;}
+  .ti-check .v.empty{color:#cbd5e0;}
+  .ti-feedback{margin-top:14px;min-height:1.2em;}
+  .ti-feedback .ok{color:#2f855a;}
+  .ti-feedback .note{color:#718096;}
+  .ti-after{margin-top:20px;padding-top:16px;border-top:2px solid #e2e8f0;display:flex;gap:12px;align-items:center;
+    flex-wrap:wrap;color:#718096;}
+  .ti-ghost{background:#edf2f7;color:#2d3748;padding:8px 16px;font-size:.95em;}
+  .ti-ghost:hover{background:#e2e8f0;}
 </style>
 </head>
 <body>
 <div class="app">
   <div class="wrap">
-    <div class="nav-tabs" id="navTabs"></div>
-
-    <div class="top">
-      <h1 id="title">Two-step equations</h1>
-      <div class="levels" id="levels"></div>
+    <div class="drillhead">
+      <span class="dh-name">Two-Step Equations</span>
+      <span class="dh-right"><span class="dh-count" id="problem-title">Problem 1 of 10</span><button class="turnin-link" id="turnin-link" type="button">Turn in</button></span>
     </div>
 
     <div class="work">
       <div class="stagebox" id="stagebox">
         <div class="stage" id="stage">
-          <div class="scroller"><div class="eq" id="eq"></div></div>
-          <div id="panel"></div>
+          <div class="stage-main" id="stageMain">
+            <div class="scroller"><div class="eq" id="eq"></div></div>
+          </div>
+          <div class="stage-side" id="stageSide">
+            <div id="panel"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -247,19 +285,60 @@
      real one can be sized once and left alone -->
 <div class="ghost" id="ghost" aria-hidden="true"></div>
 
+<!-- the turn-in page: after problem 10, or any time from the Turn in button -->
+<div class="turnin off" id="turnin" role="dialog" aria-labelledby="ti-title">
+  <div class="ti-inner">
+    <h2 id="ti-title">All 10 done</h2>
+
+    <iframe name="hidden_iframe" id="hidden_iframe" style="display:none"
+            onload="if(window.onHiddenFrameLoad)onHiddenFrameLoad()"></iframe>
+
+    <form action="https://docs.google.com/forms/d/e/1FAIpQLSe4_Gnrq1zyrttA3lSgrVBtMkaVaoMim31ByzoH-orxmfDB2A/formResponse"
+          method="POST" target="hidden_iframe" id="gform">
+      <div class="ti-field">
+        <label for="studentPeriod"><span class="ti-num">1</span>Period</label>
+        <input type="number" id="studentPeriod" placeholder="e.g. 3" min="1" max="10" required>
+      </div>
+      <div class="ti-field">
+        <label for="lastName"><span class="ti-num">2</span>LAST name
+          <em>&mdash; your family name, the one the roster is alphabetized by</em></label>
+        <input type="text" id="lastName" placeholder="Rodriguez" autocomplete="family-name" required>
+      </div>
+      <div class="ti-field">
+        <label for="firstName"><span class="ti-num">3</span>FIRST name
+          <em>&mdash; the name your teacher calls you by</em></label>
+        <input type="text" id="firstName" placeholder="Maria" autocomplete="given-name" required>
+      </div>
+      <div class="ti-check" id="nameCheck"></div>
+      <input type="hidden" id="studentName" name="entry.1899284808" value="">
+      <input type="hidden" id="formScore" name="entry.1974610095" value="">
+      <button type="submit" class="check-btn" id="ti-submit">Submit Results</button>
+    </form>
+
+    <div class="ti-feedback" id="ti-feedback"></div>
+    <div class="ti-after">
+      <span id="ti-after-lab">Want more practice?</span>
+      <button class="ti-ghost" type="button" id="ti-back">Keep practicing</button>
+    </div>
+
+    <h3>Your work</h3>
+    <div class="ti-recap" id="ti-recap"></div>
+    <div id="ti-log"></div>
+  </div>
+</div>
+
 <script>
 
-/* ============ shell: one score, tabs state, router ============ */
+/* ============ shell: one score, mixed dealing, router ============ */
 const Shell = {
-  done:0, streak:0, active:null, activeEng:null,
-  mode:"basic", engines:{}, timers:[], recent:[],
+  done:0, streak:0, active:null, activeEng:null, bag:[], lastKind:null, engines:{}, timers:[],
   counts:{basic:0, negfrac:0, fcoef:0},
 
-  title:"Two-step equations",
+  /* the three kinds of two-step problem, dealt in equal amounts */
   kinds:[
-    {id:"basic",   tab:"Basic",                     tally:"ax + b",            name:"Basic two-step",           eng:"two", arg:"basic",   grid:"two"},
-    {id:"negfrac", tab:"Negatives &amp; Fractions", tally:"&minus;a &divide;", name:"Negatives &amp; fractions",eng:"two", arg:"negfrac", grid:"two"},
-    {id:"fcoef",   tab:"Fraction Coefficients",     tally:"a/b x",             name:"Fraction coefficients",    eng:"two", arg:"fcoef",   grid:"two"}
+    {id:"basic",   eng:"two", arg:"basic"},
+    {id:"negfrac", eng:"two", arg:"negfrac"},
+    {id:"fcoef",   eng:"two", arg:"fcoef"}
   ],
   kind:function(id){
     const ks=Shell.kinds;
@@ -278,13 +357,13 @@ const Shell = {
     const stage=document.getElementById("stage");
     if(!stage) return;
     const box=stage.parentNode, s=Shell.scale;
-    if(s<0.999){
-      stage.style.transform="scale("+s+")";
-      box.style.height=Math.ceil(stage.offsetHeight*s)+"px";
-    } else {
-      stage.style.transform="none";
-      box.style.height="";
-    }
+    stage.style.transform = Math.abs(s-1)<0.001 ? "none" : "scale("+s+")";
+    /* each column keeps its finished width, so nothing slides sideways as lines appear */
+    const main=document.getElementById("stageMain"), side=document.getElementById("stageSide");
+    if(main) main.style.minWidth = Shell.mainW ? Shell.mainW+"px" : "";
+    if(side) side.style.minWidth = Shell.sideW ? Shell.sideW+"px" : "";
+    /* hold the room for the finished problem from the first step on */
+    box.style.height=Math.ceil(Math.max(stage.offsetHeight, Shell.stageH||0)*s)+"px";
   },
   /* how much room the whole stage has to fit into */
   room:function(){
@@ -321,37 +400,51 @@ const Shell = {
     }
   },
 
-  /* every drill paints the same header and tags the grid so its own layout applies */
-  head:function(id){
-    const k=Shell.kind(id), c=Shell.counts;
-    document.getElementById("eq").className = "eq k-"+(k.grid||k.id);
-    document.getElementById("title").innerHTML = Shell.title;
-    document.getElementById("levels").innerHTML =
-      '<span class="score">'+Shell.done+' solved &middot; <b>'+Shell.streak+'</b> in a row</span>'
-      + '<span class="tally">'
-      + Shell.kinds.map(function(x){
-          return '<span class="'+(x.id===id?"on":"")+'" title="'+x.name+'">'+x.tally
-               + ' <b>'+c[x.id]+'</b></span>';
-        }).join("")
-      + '</span>';
+  head:function(){
+    document.getElementById("eq").className = "eq k-two";
   },
-  solved:function(clean){
+  solved:function(clean,info){
+    TI.record(clean,info);
     Shell.done++;
     Shell.streak = clean ? Shell.streak+1 : 0;
     if(Shell.active && Shell.counts[Shell.active]!==undefined) Shell.counts[Shell.active]++;
   },
 
-  /* the same four moves on every problem: press one, then type the number */
+  /* the same four moves on every problem: press one (or type its key), then type the number */
   OPS:[
-    ["opPlus", "add",      "+",         "Add to both sides"],
-    ["opMinus","sub",      "\u2212",    "Subtract from both sides"],
-    ["opMul",  "multiply", "(\u2009)",  "Multiply both sides"],
-    ["opDiv",  "divide",   "\u00f7",    "Divide both sides"]
+    ["opPlus", "add",      "+",         "Add to both sides",        "+", "A"],
+    ["opMinus","sub",      "\u2212",    "Subtract from both sides", "\u2212", "S"],
+    ["opMul",  "multiply", "(\u2009)",  "Multiply both sides",      "x", "M"],
+    ["opDiv",  "divide",   "\u00f7",    "Divide both sides",        "/", "D"]
   ],
+  /* keys that choose each move: the plain keys, the number-pad keys, and look-alikes */
+  KEYS:{
+    "+":"opPlus", "=":"opPlus",
+    "-":"opMinus", "\u2212":"opMinus", "_":"opMinus",
+    "x":"opMul", "X":"opMul", "*":"opMul", "\u00d7":"opMul", "(":"opMul", ")":"opMul",
+    "/":"opDiv", "\u00f7":"opDiv",
+    "a":"opPlus", "A":"opPlus", "s":"opMinus", "S":"opMinus",
+    "m":"opMul", "M":"opMul", "d":"opDiv", "D":"opDiv"
+  },
   opsHTML:function(){
     return '<div class="ops">'+Shell.OPS.map(function(o){
-      return '<button class="op" id="'+o[0]+'" aria-label="'+o[3]+'" title="'+o[3]+'">'+o[2]+'</button>';
+      return '<button class="op" id="'+o[0]+'" aria-label="'+o[3]+'" aria-keyshortcuts="'+o[4]+' '+o[5]+'"'
+           + ' title="'+o[3]+' (type '+o[4]+' or '+o[5]+')">'+o[2]+'<span class="key">'+o[5]+'</span></button>';
     }).join("")+'</div>';
+  },
+  /* typing + \u2212 x / while the buttons are showing presses that button */
+  keyOp:function(e){
+    if(e.ctrlKey||e.metaKey||e.altKey) return;
+    if(TI.isOpen()) return;
+    const a=document.activeElement;
+    if(a && ((a.tagName==="INPUT" && a.type!=="checkbox")||a.tagName==="TEXTAREA")) return;
+    const id=Shell.KEYS[e.key];
+    const btn=id && document.getElementById(id);
+    if(!btn) return;
+    e.preventDefault();
+    btn.classList.add("kbd");
+    setTimeout(function(){ btn.classList.remove("kbd"); },180);
+    btn.click();
   },
   bindOps:function(fn){
     Shell.OPS.forEach(function(o){
@@ -365,52 +458,56 @@ const Shell = {
     Shell.later(340,function(){ btn.classList.remove("shake"); });
   },
 
-  /* don't let one kind of problem come up three times running in mixed mode */
-  pickKind:function(){
-    if(Shell.mode !== "mixed") return Shell.mode;
-    let pool=Shell.kinds.map(function(k){return k.id;});
-    if(Shell.recent.length>1 && Shell.recent[0]===Shell.recent[1]){
-      pool=pool.filter(function(k){return k!==Shell.recent[0];});
-    }
-    const k=pool[Math.floor(Math.random()*pool.length)];
-    Shell.recent.unshift(k); Shell.recent=Shell.recent.slice(0,2);
-    return k;
+  /* wrap a piece of the equation so it can be clicked (target step), or shown as the one picked */
+  mark:function(phase,html,id,want){
+    if(phase==="target") return '<span class="tgt" role="button" tabindex="0" data-t="'+id+'">'+html+'</span>';
+    if(phase==="pick") return '<span class="tgt'+(id===want?" picked":"")+'">'+html+'</span>';
+    return html;
+  },
+  bindTargets:function(fn){
+    document.querySelectorAll('#eq .tgt[role=button]').forEach(function(t){
+      const go=function(){ fn(t.getAttribute("data-t"),t); };
+      t.onclick=go;
+      t.onkeydown=function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); go(); } };
+    });
   },
 
+  /* equal amounts: deal from a shuffled bag of the three kinds, so every three in a row has one of each */
+  pickKind:function(){
+    if(!Shell.bag.length){
+      let b;
+      do{
+        b=Shell.kinds.map(function(k){return k.id;});
+        for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=b[i]; b[i]=b[j]; b[j]=t; }
+      }while(b[b.length-1]===Shell.lastKind);
+      Shell.bag=b;
+    }
+    const k=Shell.bag.pop(); Shell.lastKind=k;
+    return k;
+  },
+  nextLabel:function(){ return TI.nextLabel(); },
+
   next:function(){
+    if(TI.isOpen()) return;
+    if(TI.wantsTurnIn()){ TI.show(); return; }
+    TI.newProblem();
     Shell.clearTimers();
     document.getElementById("panel").innerHTML="";
     const id=Shell.pickKind(), k=Shell.kind(id);
     Shell.active=id; Shell.activeEng=k.eng;
     Shell.engines[k.eng].start(k.arg);
-  },
-
-  paintTabs:function(){
-    document.getElementById("navTabs").innerHTML =
-      Shell.kinds.map(function(k){
-        return '<button class="tab-btn'+(Shell.mode===k.id?" active":"")
-             + '" data-mode="'+k.id+'">'+k.tab+'</button>';
-      }).join("")
-      + '<button class="tab-btn'+(Shell.mode==="mixed"?" active":"")+'" data-mode="mixed">Mixed</button>';
-    document.querySelectorAll("#navTabs .tab-btn").forEach(function(btn){
-      btn.onclick = function(){ Shell.setTab(btn.getAttribute("data-mode")); };
-    });
-  },
-  setTab:function(mode){
-    if(Shell.mode === mode) return;
-    Shell.mode = mode; Shell.recent=[];
-    Shell.paintTabs();
-    Shell.next();
   }
 };
 
-Shell.paintTabs();
 Shell.watchFit();
+document.addEventListener("keydown",Shell.keyOp);
+
 
 /* ================= two-step =================
    Every two-step problem is one "constant" move and one "coefficient" move.
    Normally the constant goes first; the wrapped form (x + 4)/5 = 3 needs the
-   coefficient cleared first, so the two steps just swap roles.               */
+   coefficient cleared first, so the two steps just swap roles.
+   Each move starts by clicking the part of the equation that is in the way. */
 Shell.engines["two"] = (function(){
 const KEY="two";
 
@@ -486,14 +583,17 @@ function tryGen(fl){
           k:k, C:C, M:M, sol:sol, varLeft:varLeft, varFirst:varFirst};
 }
 function genProblem(fl){
-  for(let i=0;i<600;i++){ const p=tryGen(fl||"basic"); if(p) return p; }
+  for(let i=0;i<600;i++){
+    const p=tryGen(fl||"basic");
+    if(p) return p;
+  }
   return {kind:"mul",wrapped:false,V:"x",a:2,num:0,den:0,s:1,
           k:5,C:15,M:10,sol:5,varLeft:true,varFirst:true};
 }
 
 /* ============ state ============ */
 const S={
-  p:genProblem("basic"), fl:"basic", phase:"pick1", sign:1,
+  p:null, fl:"basic", phase:"target1", sign:1,
   opIn:"", coefIn:"", recN:"", recD:"", mIn:"", ansIn:"",
   simpDen:"", simpNum:"",
   miss:"", hint:false, clean:true, firstId:null
@@ -501,8 +601,8 @@ const S={
 const clearTimers=Shell.clearTimers, later=Shell.later;
 
 /* ============ where we are ============ */
-const ORDER=["pick1","op1","cancel1","simplify1","compute1",
-             "pick2","op2","cancel2","simplify2","compute2","solved","check"];
+const ORDER=["target1","pick1","op1","cancel1","simplify1","compute1",
+             "target2","pick2","op2","cancel2","simplify2","compute2","solved","check"];
 function idx(ph){return ORDER.indexOf(ph);}
 function at(ph){return idx(S.phase)>=idx(ph);}
 function past(ph){return idx(S.phase)>idx(ph);}
@@ -516,9 +616,20 @@ function isConst(){return stepNo()===cs();}
 function constIn(){return S.p.wrapped?S.p.M:S.p.C;}
 function coefIn(){return S.p.wrapped?S.p.C:S.p.M;}
 
-/* ---- cross-simplifying, set up exactly as the one-step fraction drill does it.
-   The reciprocal's bottom number and the lone number on the other side share a
-   factor, so both get struck out and rewritten smaller before multiplying.     */
+/* ---- clicking what's in the way ----
+   ids:  k = the loose number,  a = what is attached to the variable,
+         v = the variable,      c = the lone number on the other side   */
+function wantT(step){ return step===cs() ? "k" : "a"; }
+function tmode(step){
+  return S.phase==="target"+step ? "target" : (S.phase==="pick"+step ? "pick" : "");
+}
+function marker(step){
+  const m=tmode(step), w=wantT(step);
+  return function(h,id){ return Shell.mark(m,h,id,w); };
+}
+function plain(h){ return h; }
+
+/* ---- cross-simplifying, set up exactly as the one-step fraction drill does it. */
 function gFac(){return gcd(S.p.num, Math.abs(coefIn()));}
 function canSimp(){return S.p.kind==="frac" && gFac()>1;}
 function redDen(){return S.p.num/gFac();}
@@ -563,6 +674,7 @@ function mgroup(mult,inner,tall,cls){
   return '<span class="mgroup'+(tall?" tall":"")+' '+(cls||"")+'">'+mult
        + '<span class="paren">(</span>'+inner+'<span class="paren">)</span></span>';
 }
+function tpair(a,b){ return '<span class="tpair">'+a+b+'</span>'; }
 function markK(v){
   const c=kCls();
   return c ? '<span class="'+c+'">'+dash(String(v))+'</span>' : dash(String(v));
@@ -602,15 +714,17 @@ function constCancelHTML(live){
 }
 
 /* the variable term as written.  inline folds its sign in ( \u22123p );
-   otherwise the sign is left to the caller, which is how 12 \u2212 3p is set. */
-function varTermHTML(inline,marked){
+   otherwise the sign is left to the caller, which is how 12 \u2212 3p is set.
+   tm wraps the clickable pieces when it is time to pick what's in the way. */
+function varTermHTML(inline,marked,tm){
   const p=S.p, V=p.V, c=kCls();
+  tm = tm || plain;
   const mk=function(h){return (marked&&c) ? '<span class="'+c+'">'+h+'</span>' : h;};
-  if(p.kind==="wrap") return dfrac(V+sgnHTML(p.k), mk(String(p.a)));
-  if(p.kind==="mul")  return mk(inline?dash(String(p.a)):String(Math.abs(p.a)))+V;
-  if(p.kind==="div")  return dfrac(V, mk(dash(String(p.a))));
+  if(p.kind==="wrap") return dfrac(tm(V,"v")+tm(sgnHTML(p.k),"k"), tm(mk(String(p.a)),"a"));
+  if(p.kind==="mul")  return tpair(tm(mk(inline?dash(String(p.a)):String(Math.abs(p.a))),"a"), tm(V,"v"));
+  if(p.kind==="div")  return dfrac(tm(V,"v"), tm(mk(dash(String(p.a))),"a"));
   const f=(inline&&p.s<0?MINUS:"")+dfrac(p.num,p.den);
-  return (marked ? '<span class="'+slashCls()+'">'+f+'</span>' : f)+V;
+  return tpair(tm(marked ? '<span class="'+slashCls()+'">'+f+'</span>' : f,"a"), tm(V,"v"));
 }
 
 /* the second move, written on both sides of whatever line it lands on */
@@ -639,16 +753,18 @@ function order(t1,t2,eq,n){ return S.p.varLeft ? t1+t2+eq+n : n+eq+t1+t2; }
 function normalRows(){
   const p=S.p, rows=[];
   const EQ=cell("=","eqsign"), BLANK=cell("","hide"), NOEQ=cell("","");
+  const m1=marker(1);
 
   /* line 1 — the problem as given */
   const cBlue = S.phase==="compute1" ? "blue" : "";
+  const cHTML = m1(dash(String(p.C)),"c");
   if(p.varFirst){
-    rows.push(order(cell(varTermHTML(true,false)), cell(sgnHTML(p.k),cCls()),
-                    EQ, cell(dash(String(p.C)),cBlue)));
+    rows.push(order(cell(varTermHTML(true,false,m1)), cell(m1(sgnHTML(p.k),"k"),cCls()),
+                    EQ, cell(cHTML,cBlue)));
   } else {
-    rows.push(order(cell(dash(String(p.k)),cCls()),
-                    cell('<span class="sgn">'+(varSign()<0?MINUS:"+")+'</span>'+varTermHTML(false,false)),
-                    EQ, cell(dash(String(p.C)),cBlue)));
+    rows.push(order(cell(m1(dash(String(p.k)),"k"),cCls()),
+                    cell('<span class="sgn">'+(varSign()<0?MINUS:"+")+'</span>'+varTermHTML(false,false,m1)),
+                    EQ, cell(cHTML,cBlue)));
   }
 
   /* line 2 — the same move on both sides */
@@ -665,8 +781,9 @@ function normalRows(){
 
   /* line 3 — what is left, and then the second move written over it */
   if(at("compute1")){
-    let v=varTermHTML(true,coefMoved());
-    let n=S.phase==="compute1" ? boxHTML("mv",S.mIn,"") : dash(String(p.M));
+    const m2=marker(2);
+    let v=varTermHTML(true,coefMoved(),m2);
+    let n=S.phase==="compute1" ? boxHTML("mv",S.mIn,"") : m2(dash(String(p.M)),"c");
     if(coefMoved()){ const r=coefApply(v,n); v=r[0]; n=r[1]; }
     const nCls = (S.phase==="compute2"||simplifying()) ? "blue" : "";
     rows.push(p.varFirst ? order(cell(v),BLANK,EQ,cell(n,nCls))
@@ -687,18 +804,20 @@ function normalRows(){
 function wrappedRows(){
   const p=S.p, rows=[];
   const EQ=cell("=","eqsign"), BLANK=cell("","hide"), NOEQ=cell("","");
+  const m1=marker(1);
 
   /* line 1 — the whole side sits over a, so that has to go first */
-  let v=varTermHTML(true,coefMoved()), n=dash(String(p.C));
+  let v=varTermHTML(true,coefMoved(),m1), n=m1(dash(String(p.C)),"c");
   if(coefMoved()){ const r=coefApply(v,n); v=r[0]; n=r[1]; }
   const nCls = S.phase==="compute1" ? "blue" : "";
   rows.push(p.varLeft ? wideCell(v)+EQ+cell(n,nCls) : cell(n,nCls)+EQ+wideCell(v));
 
   /* line 2 — now an ordinary one-step problem */
   if(at("compute1")){
+    const m2=marker(2);
     rows.push('<div class="spacer"></div>');
-    const mHTML = S.phase==="compute1" ? boxHTML("mv",S.mIn,"") : dash(String(p.M));
-    rows.push(order(cell(p.V), cell(sgnHTML(p.k),cCls()), EQ,
+    const mHTML = S.phase==="compute1" ? boxHTML("mv",S.mIn,"") : m2(dash(String(p.M)),"c");
+    rows.push(order(cell(m2(p.V,"v")), cell(m2(sgnHTML(p.k),"k"),cCls()), EQ,
                     cell(mHTML, S.phase==="compute2"?"blue":"")));
   }
 
@@ -760,62 +879,36 @@ function renderPanel(){
 }
 
 /* ============ the prompt ============ */
-function pickHint(konst){
-  const p=S.p, V=p.V;
-  if(konst){
-    if(p.wrapped) return 'The fraction is gone, so this is an ordinary one-step problem now. '
-      + Math.abs(p.k)+' is '+(p.k<0?"subtracted":"added")+', so press '+(p.k<0?"+":MINUS)+'.';
-    return Math.abs(p.k)+' is '+(p.k<0?"subtracted":"added")+' on that side. Clear the loose number '
-      + 'first &mdash; press '+(p.k<0?"+":MINUS)+'. Whatever is attached to '+V+' comes off last.';
-  }
-  if(p.wrapped) return 'The <strong>whole</strong> side is divided by '+p.a+', the '+Math.abs(p.k)
-    + ' included, so you cannot take that off yet. Clear the denominator first &mdash; press ( ).';
-  if(p.kind==="mul") return V+' is multiplied by '+dash(String(p.a))
-    + '. Division undoes multiplication &mdash; press '+DIV+'.';
-  if(p.kind==="frac") return V+' is multiplied by a fraction. A fraction times its reciprocal is 1, '
-    + 'so multiply both sides &mdash; press ( ).';
-  return V+' is divided by '+dash(String(p.a))+'. Multiplication undoes division &mdash; press ( ).';
-}
-
 function renderPrompt(){
   const el=document.getElementById("promptbar"), p=S.p, V=p.V;
-  const hintBtn='<button class="link" id="hintBtn">'+(S.hint?"Hide hint":"Hint")+'</button>';
-  const sub=subName(), step=stepNo(), konst=isConst();
+  const sub=subName(), konst=isConst();
   let h="";
 
-  if(sub==="pick"){
-    h='<div class="prompt"><span>'+(step===1
-        ? 'This one takes <strong>two moves</strong>. What do you do to both sides first?'
-        : 'One move left. What do you do to both sides to get '+V+' alone?')+'</span>'+hintBtn;
-    if(S.hint) h+='<div class="hintline">'+pickHint(konst)+'</div>';
-    h+='</div>';
+  if(sub==="target"){
+    h='<div class="prompt"><span>Click what we\'re trying to get rid of.</span></div>';
+  }
+  else if(sub==="pick"){
+    h='<div class="prompt"><span>We need to do the <strong>opposite</strong>, or <strong>inverse</strong>, '
+      + 'of this on <strong>both sides</strong>.</span>'
+      + '<span class="faint">Click a button, or type A S M D (or + &minus; x /)</span></div>';
   }
   else if(sub==="op"){
     if(konst){
-      h='<div class="prompt"><span>Type how much you '+(S.sign<0?"subtract from":"add to")+' both sides.</span>'+hintBtn;
-      if(S.hint) h+='<div class="hintline">Use '+Math.abs(p.k)+' &mdash; that is exactly what cancels '
-        + dash(String(p.k))+' out.</div>';
+      h='<div class="prompt"><span>Now type how much you '+(S.sign<0?"subtract from":"add to")+' both sides.</span></div>';
     } else if(p.kind==="mul"){
-      h='<div class="prompt"><span>Divide both sides by the number multiplying '+V+'.</span>'+hintBtn;
-      if(S.hint) h+='<div class="hintline">Write '+dash(String(p.a))+' under each side &mdash; sign and all.</div>';
+      h='<div class="prompt"><span>Divide both sides by the number multiplying '+V+'.</span></div>';
     } else if(p.kind==="frac"){
       h='<div class="prompt"><span>Multiply both sides by the reciprocal of</span>'
-        + '<span class="math">'+coefFracHTML()+'</span>'+hintBtn;
-      if(S.hint) h+='<div class="hintline">Flip it over: '+p.den+' on top, '+p.num+' on the bottom. '
-        + (p.s<0 ? 'The coefficient is negative, so the reciprocal is negative too &mdash; type the sign on top.'
-                 : 'The coefficient is positive, so the reciprocal is positive.')+'</div>';
+        + '<span class="math">'+coefFracHTML()+'</span></div>';
     } else {
-      h='<div class="prompt"><span>Multiply both sides by the number underneath '+V+'.</span>'+hintBtn;
-      if(S.hint) h+='<div class="hintline">Write '+dash(String(p.a))
-        + ' outside each set of parentheses &mdash; sign and all.</div>';
+      h='<div class="prompt"><span>Multiply both sides by the number underneath '+V+'.</span></div>';
     }
-    h+='</div>';
   }
   else if(sub==="cancel"){
     if(konst){
       h='<div class="prompt"><span class="math">'+dash(String(p.k))+'</span><span>and</span>'
         + '<span class="math">'+sgnHTML(-p.k)+'</span><span>make zero, so they cancel'
-        + (p.wrapped?'':' &mdash; leaving the '+V+' term by itself')+'.</span></div>';
+        + (p.wrapped?' &mdash; leaving '+V+' alone':' &mdash; leaving the '+V+' term by itself')+'.</span></div>';
     } else if(p.kind==="frac"){
       h='<div class="prompt"><span class="math">'+recipHTML(false)+'</span><span>'+TIMES+'</span>'
         + '<span class="math">'+coefFracHTML()+'</span>'
@@ -823,19 +916,14 @@ function renderPrompt(){
     } else {
       h='<div class="prompt"><span class="math">'+dash(String(p.a))+'</span><span>over</span>'
         + '<span class="math">'+dash(String(p.a))+'</span>'
-        + '<span>makes 1, so they cancel &mdash; leaving '+V+(p.wrapped?' and the '+Math.abs(p.k):'')
-        + ' free of the fraction.</span></div>';
+        + '<span>makes 1, so they cancel &mdash; leaving '+V+(p.wrapped?' and the '+Math.abs(p.k)+' free of the fraction':' alone')
+        + '.</span></div>';
     }
   }
   else if(sub==="simplify"){
-    const M=coefIn(), g=gFac();
+    const M=coefIn();
     h='<div class="prompt"><span><strong>Simplify before you multiply.</strong> '
-      + p.num+' and '+Math.abs(M)+' share a factor &mdash; divide them both by it.</span>'+hintBtn;
-    if(S.hint) h+='<div class="hintline"><span>'+p.num+' &divide; '+g+' = '+redDen()+', and '
-      + Math.abs(M)+' &divide; '+g+' = '+Math.abs(redNum())+'.'
-      + (M<0?' The number stays negative.':'')
-      + (redDen()>1?' They don\'t cancel all the way &mdash; '+redDen()+' is left underneath.':'')
-      + '</span></div>';
+      + p.num+' and '+Math.abs(M)+' share a factor &mdash; divide them both by it.</span>';
     if(simpPartial()) h+='<div class="noteline">That is a common factor, but not the biggest one '
       + '&mdash; those two can still be cancelled further.</div>';
     h+='</div>';
@@ -843,10 +931,7 @@ function renderPrompt(){
   else if(sub==="compute"){
     if(konst){
       h='<div class="prompt"><span>Combine the blue side:</span><span class="math blue">'
-        + dash(String(constIn()))+' '+sgnHTML(-p.k)+'</span>'+hintBtn;
-      if(S.hint) h+='<div class="hintline">'+(p.k>0
-        ? 'Taking '+Math.abs(p.k)+' away moves down the number line.'
-        : 'Adding '+Math.abs(p.k)+' moves up the number line.')+'</div>';
+        + dash(String(constIn()))+' '+sgnHTML(-p.k)+'</span></div>';
     } else {
       const M=coefIn(), Md=dash(String(M));
       /* after cancelling, the numbers on the page are the small ones */
@@ -856,23 +941,8 @@ function renderPrompt(){
                  : p.kind==="frac" ? (canSimp() ? cut : recipHTML(false)+' '+TIMES+' '+Md)
                                    : dash(String(p.a))+' '+TIMES+' '+Md;
       h='<div class="prompt"><span>Now finish the other side:</span>'
-        + '<span class="math blue">'+expr+'</span>'+hintBtn;
-      if(S.hint){
-        const diff = p.kind==="frac" ? ((p.s<0)!==(M<0)) : ((p.a<0)!==(M<0));
-        h+='<div class="hintline">'+(p.kind==="mul"
-            ? 'How many '+Math.abs(p.a)+'s fit into '+Math.abs(M)+'? '
-            : p.kind==="frac"
-              ? (canSimp()
-                  ? 'Because you cancelled first these are small numbers: '
-                    + p.den+' '+TIMES+' '+Math.abs(redNum())
-                    + (redDen()>1?', over '+redDen():'')+'. '
-                  : Math.abs(M)+' &divide; '+p.num+' = '+(Math.abs(M)/p.num)+', then '+TIMES+' '+p.den+'. ')
-              : Math.abs(p.a)+' groups of '+Math.abs(M)+'. ')
-          + (diff ? 'One number is negative, so the answer is negative.'
-                  : 'Both signs match, so the answer is positive.')+'</div>';
-      }
+        + '<span class="math blue">'+expr+'</span></div>';
     }
-    h+='</div>';
   }
   else if(S.phase==="solved"){
     h='<div class="prompt"><span class="green"><strong>That\'s '+V+'. Now check it.</strong></span></div>';
@@ -880,71 +950,61 @@ function renderPrompt(){
   else if(S.phase==="check"){
     h='<div class="row-between"><div class="prompt"><span>Put</span><span class="math">'
       + dash(String(p.sol))+'</span><span>back in for '+V+' and both sides match.</span></div>'
-      + '<button class="next" id="nextBtn">Next problem &rarr;</button></div>';
+      + '<button class="next" id="nextBtn">'+Shell.nextLabel()+'</button></div>';
   }
   if(S.miss) h+='<div class="missline">'+S.miss+'</div>';
-  if(S.phase!=="check") h+='<div><button class="link skip" id="skipBtn">Skip</button></div>';
   el.innerHTML=h;
 }
 
-/* ---- one size, worked out before the first line is drawn ----
-   The tallest the page ever gets is the check step: every line of working is
-   down, plus the substitution underneath. So each tab is sized from the tallest
-   problem it can throw, drawn off-screen and measured. Every problem in that
-   tab is then written at that one size — nothing resizes mid-solve, and nothing
-   resizes between problems either. */
-/* Templates, not real problems: every number is pushed to the widest the
-   generator can produce for that kind, so the measurement is an upper bound.
-   They do not have to be arithmetically consistent — only the drawn size counts. */
-const TALL={
-  basic:[
-    {kind:"div",wrapped:false,V:"m",a:9, num:0,den:0,s:1,k:-15,C:-27,M:-12,sol:-60,varLeft:false,varFirst:false},
-    {kind:"mul",wrapped:false,V:"m",a:9, num:0,den:0,s:1,k:-15,C:-75,M:-60,sol:-12,varLeft:false,varFirst:false}
-  ],
-  negfrac:[
-    {kind:"wrap",wrapped:true,V:"m",a:8, num:0,den:0,s:1,k:-12,C:-9, M:-72,sol:-60,varLeft:false,varFirst:true},
-    {kind:"div", wrapped:false,V:"m",a:-9,num:0,den:0,s:1,k:-15,C:-27,M:-12,sol:-60,varLeft:false,varFirst:false},
-    {kind:"mul", wrapped:false,V:"m",a:-9,num:0,den:0,s:1,k:-15,C:-75,M:-60,sol:-12,varLeft:false,varFirst:false}
-  ],
-  fcoef:[
-    {kind:"frac",wrapped:false,V:"m",num:7,den:9,s:-1,k:-15,C:-78,M:-63,sol:-81,varLeft:false,varFirst:false}
-  ]
-};
-function tallList(){
-  if(Shell.mode==="mixed"){
-    return TALL.basic.concat(TALL.negfrac, TALL.fcoef);
-  }
-  return TALL[Shell.mode] || TALL.basic;
-}
+/* ---- one size per problem, as big as the screen allows ----
+   Before the first line is drawn, this problem is drawn off-screen in its two
+   biggest states (every line of working plus the check, and the last set of
+   operation buttons) and measured. It is then scaled up or down so that finished
+   problem just fills the room, and the block keeps that height from the start,
+   so new lines appear below without anything moving or resizing mid-solve. */
 function lockScale(){
   const room=Shell.room();
+  Shell.stageH=0; Shell.mainW=0; Shell.sideW=0;
   if(!room.h || !room.w){ Shell.scale=1; return; }
-  const saveP=S.p, savePhase=S.phase, saveMiss=S.miss;
-  let raw=1;
-  tallList().forEach(function(cand){
-    S.p=cand; S.phase="check"; S.miss="";
-    const m=Shell.ghost('<div class="stage">'
+  const savePhase=S.phase, saveMiss=S.miss;
+  const g=document.getElementById("ghost");
+  let mw=0, mh=0, sw=0, sh=0, gap=0, row=true;
+  [["check",false],["pick2",true]].forEach(function(st){
+    S.phase=st[0]; S.miss="";
+    g.innerHTML='<div class="stage"><div class="stage-main">'
       + '<div class="scroller"><div class="eq k-two">'
-      + (cand.wrapped?wrappedRows():normalRows()).join("")
-      + '</div></div><div>'+checkLineHTML()+'</div></div>');
-    if(m.length && m[0].h && m[0].w){
-      raw=Math.min(raw, room.w/m[0].w, room.h/m[0].h);
-    }
+      + (S.p.wrapped?wrappedRows():normalRows()).join("")
+      + '</div></div></div><div class="stage-side">'
+      + '<div>'+(st[1]?Shell.opsHTML():checkLineHTML())+'</div></div></div>';
+    const stage=g.firstChild, main=stage.children[0], side=stage.children[1];
+    const cs=getComputedStyle(stage);
+    row = cs.flexDirection==="row";
+    gap = parseFloat(row?cs.columnGap:cs.rowGap)||0;
+    mw=Math.max(mw,main.offsetWidth); mh=Math.max(mh,main.offsetHeight);
+    sw=Math.max(sw,side.offsetWidth); sh=Math.max(sh,side.offsetHeight);
   });
-  S.p=saveP; S.phase=savePhase; S.miss=saveMiss;
-  /* a floor, so a very short window shrinks the writing only so far */
-  Shell.scale=Math.max(raw, 0.5);
-  document.querySelector(".work").style.overflowY = (raw < Shell.scale-0.001) ? "auto" : "hidden";
+  g.innerHTML="";
+  S.phase=savePhase; S.miss=saveMiss;
+  const w = row ? mw+gap+sw : Math.max(mw,sw);
+  const h = row ? Math.max(mh,sh) : mh+gap+sh;
+  if(!w || !h){ Shell.scale=1; return; }
+  /* a little spare width for the click highlights on the first line */
+  const raw=Math.min(room.w*0.95/w, room.h*0.97/h);
+  /* a floor, so a very short window shrinks the writing only so far; a ceiling so a
+     small problem on a huge screen doesn't turn into a billboard */
+  Shell.scale=Math.min(Math.max(raw,0.5),2.4);
+  Shell.stageH=h; Shell.mainW=mw; Shell.sideW=sw;
+  document.querySelector(".work").style.overflowY = (raw < 0.5) ? "auto" : "hidden";
 }
 
 function render(){
-  Shell.head(Shell.active); renderEquation(); renderPanel(); renderPrompt(); attach();
+  Shell.head(); renderEquation(); renderPanel(); renderPrompt(); attach();
   Shell.applyScale(); focusFirst();
 }
 function focusFirst(){
   later(60,function(){
     const el=S.firstId && document.getElementById(S.firstId);
-    if(el) el.focus();
+    if(el && !el.readOnly) el.focus();
   });
 }
 
@@ -966,7 +1026,24 @@ function setPhase(ph){
 function afterCancel(step){
   return (step===ks() && canSimp()) ? "simplify"+step : "compute"+step;
 }
-function finish(){ Shell.solved(S.clean); setPhase("solved"); }
+/* plain-text version of the problem and answer, for the turn-in log */
+function describe(){
+  const p=S.p, V=p.V;
+  const pm=function(n){ return (n<0?MINUS:"+")+" "+Math.abs(n); };
+  let side;
+  if(p.kind==="wrap") side="("+V+" "+pm(p.k)+")/"+p.a;
+  else {
+    let lead, bare;
+    if(p.kind==="mul"){ lead=dash(String(p.a))+V; bare=Math.abs(p.a)+V; }
+    else if(p.kind==="div"){ lead=V+"/"+dash(String(p.a)); bare=lead; }
+    else { bare="("+p.num+"/"+p.den+")"+V; lead=(p.s<0?MINUS:"")+bare; }
+    side = p.varFirst ? lead+" "+pm(p.k)
+                      : dash(String(p.k))+" "+(varSign()<0?MINUS:"+")+" "+bare;
+  }
+  const C=dash(String(p.C));
+  return {q: p.varLeft ? side+" = "+C : C+" = "+side, a: V+" = "+dash(String(p.sol))};
+}
+function finish(){ Shell.solved(S.clean, describe()); setPhase("solved"); }
 function flagMiss(msg){
   S.clean=false; S.miss=msg; renderPrompt(); attach();
   later(3000,function(){ S.miss=""; renderPrompt(); attach(); });
@@ -974,7 +1051,7 @@ function flagMiss(msg){
 function missMessage(){
   const sub=subName();
   if(sub==="op") return isConst()
-    ? "That will not cancel it out \u2014 use the same size number that is in the way."
+    ? "That won't cancel it out \u2014 use the same size number that's in the way."
     : (S.p.kind==="frac" ? "Not quite \u2014 flip the fraction over, and keep the sign in mind."
                          : "Not quite \u2014 check the number and its sign, then try again.");
   if(sub==="simplify") return "Divide both numbers by the same factor, then write what each one becomes.";
@@ -986,13 +1063,15 @@ function begin(fl){
   clearTimers();
   S.fl = fl || "basic";
   S.p = genProblem(S.fl);
-  S.phase="pick1"; S.sign=1;
+  S.phase="target1"; S.sign=1;
   S.opIn=""; S.coefIn=""; S.recN=""; S.recD=""; S.mIn=""; S.ansIn="";
   S.simpDen=""; S.simpNum="";
   S.hint=false; S.clean=true; S.miss=""; S.firstId=null;
   lockScale();
   render();
 }
+/* back from the turn-in page mid-problem: pick up where it left off */
+function resume(){ if(S.p) setPhase(S.phase); }
 /* if the window changes size, work the one size out again for the problem in hand */
 Shell.onResize=function(){
   if(Shell.activeEng!==KEY || !S.p) return;
@@ -1001,11 +1080,9 @@ Shell.onResize=function(){
 
 /* ============ input handling ============ */
 function attach(){
-  const hb=document.getElementById("hintBtn");
-  if(hb) hb.onclick=function(){ S.hint=!S.hint; renderPrompt(); attach(); };
-  const sb=document.getElementById("skipBtn"); if(sb) sb.onclick=nextProblem;
   const nb=document.getElementById("nextBtn"); if(nb) nb.onclick=nextProblem;
   Shell.bindOps(chooseOp);
+  Shell.bindTargets(chooseTarget);
 
   bind("cA",onConst); bind("cB",onConst);
   bind("kA",onCoef);  bind("kB",onCoef);
@@ -1027,6 +1104,24 @@ function mirror(ids,val){
   });
 }
 
+/* ---- first: click what's in the way ---- */
+function targetMsg(id){
+  const p=S.p, V=p.V;
+  if(id==="v") return "That's "+V+" \u2014 that's what we want to keep. Click what's in its way.";
+  if(id==="c") return "That number is already by itself on the other side. Click what's in "+V+"'s way.";
+  if(id==="a") return "That one is stuck to "+V+", so it comes off last. Clear the loose "
+    + Math.abs(p.k)+" first.";
+  if(id==="k") return "Not yet \u2014 the whole side is divided by "+p.a+", so the "+Math.abs(p.k)
+    + " isn't loose. Clear the "+p.a+" underneath first.";
+  return "";
+}
+function chooseTarget(id,el){
+  const step = S.phase==="target1" ? 1 : 2;
+  if(id===wantT(step)){ S.hint=false; setPhase("pick"+step); return; }
+  S.clean=false; Shell.shake(el); flagMiss(targetMsg(id));
+}
+
+/* ---- then: pick the opposite move ---- */
 function wantOp(step){
   const p=S.p;
   if(step===cs()) return p.k>0 ? "sub" : "add";
@@ -1038,26 +1133,24 @@ function wrongOpMsg(step,pressed){
     if(pressed==="add"||pressed==="sub")
       return "That moves the wrong way \u2014 it makes that side bigger instead of clearing the "
         + (p.k<0?"subtraction":"addition")+".";
-    if(p.wrapped) return "The fraction is already cleared. What is left is a loose "+Math.abs(p.k)
-      + " \u2014 undo it by adding or subtracting.";
-    return "Not yet \u2014 the loose "+Math.abs(p.k)+" has to go first. Undo it by adding or "
-      + "subtracting, then deal with what is attached to "+V+".";
+    return "Nothing is multiplying or dividing that "+Math.abs(p.k)+" \u2014 it is being "
+      + (p.k<0?"subtracted":"added")+", so undo it the same way.";
   }
   if(pressed==="add"||pressed==="sub"){
-    if(p.wrapped) return "Careful \u2014 the whole side is over "+p.a+", so the "+Math.abs(p.k)
-      + " is not loose yet. Multiply both sides by "+p.a+" first.";
-    return "The loose number is already gone. What is left is "+V+" "
+    if(p.wrapped) return "Careful \u2014 the whole side is over "+p.a+", so nothing is loose yet. "
+      + "Undo the division first.";
+    return "Nothing is being added here \u2014 "+V+" is "
       + (p.kind==="mul"  ? "multiplied by "+dash(String(p.a))
        : p.kind==="frac" ? "multiplied by a fraction"
                          : "divided by "+dash(String(p.a)))
-      + " \u2014 adding or subtracting will not free it.";
+      + ", so adding or subtracting won't free it.";
   }
   return p.kind==="mul"
-    ? "That side is already a multiplication \u2014 multiplying again will not free "+V+"."
+    ? "That side is already a multiplication \u2014 multiplying again won't free "+V+"."
     : (p.kind==="frac"
        ? "Dividing by a fraction is the hard way \u2014 flipping it over and multiplying does the "
          + "same job. Press ( )."
-       : V+" is already being divided \u2014 dividing again will not free it.");
+       : V+" is already being divided \u2014 dividing again won't free it.");
 }
 function chooseOp(kind,btn){
   const step = S.phase==="pick1" ? 1 : 2;
@@ -1132,7 +1225,7 @@ function onMid(e){
   S.mIn=e.target.value;
   const v=parseInt2(S.mIn);
   clearTimers();
-  if(v!==null && v===S.p.M) later(300,function(){ S.hint=false; setPhase("pick2"); });
+  if(v!==null && v===S.p.M) later(300,function(){ S.hint=false; setPhase("target2"); });
 }
 function onAns(e){
   S.ansIn=e.target.value;
@@ -1146,9 +1239,139 @@ document.addEventListener("keydown",function(e){
   if(e.key==="Enter" && S.phase==="check") nextProblem();
 });
 
-return {start:begin};
+return {start:begin, resume:resume};
 
 })();
+
+/* ============================================================
+   Turning it in
+   ------------------------------------------------------------
+   10 problems get turned in. After the 10th the turn-in page
+   comes up; after that, practice keeps going. The Turn in button
+   opens the same page any time, so a student who runs out of
+   time can send what they have (the newer send counts).
+   ============================================================ */
+const GOAL = 10;
+const DRILL_NAME = "Two-Step Equations";
+const byId = function(id){ return document.getElementById(id); };
+const escHtml = function(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); };
+
+const TI = {
+  records:[], served:0, currentDone:false, autoShown:false, submitted:false, submittedAt:0,
+
+  isOpen:function(){ return !byId("turnin").classList.contains("off"); },
+  clean:function(){ return TI.records.filter(function(r){ return r.clean; }).length; },
+  record:function(clean,info){
+    if(TI.currentDone) return;
+    TI.currentDone = true;
+    info = info || {q:"",a:""};
+    TI.records.push({q:info.q, a:info.a, clean:!!clean});
+  },
+  /* after the 10th, the Next button becomes the way to the turn-in page */
+  nextLabel:function(){
+    return (TI.records.length >= GOAL && !TI.autoShown) ? "Turn in my work &rarr;" : "Next problem &rarr;";
+  },
+  wantsTurnIn:function(){
+    if(TI.records.length >= GOAL && !TI.autoShown){ TI.autoShown = true; return true; }
+    return false;
+  },
+  newProblem:function(){
+    TI.served++;
+    TI.currentDone = false;
+    byId("problem-title").textContent = TI.served <= GOAL
+      ? "Problem " + TI.served + " of " + GOAL
+      : "Problem " + TI.served + " \u00b7 extra practice";
+  },
+
+  show:function(){
+    const done = TI.records.length, clean = TI.clean();
+    if(done >= GOAL){
+      byId("ti-title").textContent = done > GOAL ? done + " problems done" : "All " + GOAL + " done";
+      byId("ti-after-lab").textContent = "Want more practice?";
+      byId("ti-back").textContent = "Keep practicing";
+    } else {
+      byId("ti-title").textContent = "Turn in your work so far";
+      byId("ti-after-lab").textContent = "Not done yet?";
+      byId("ti-back").textContent = "Go back and keep working";
+    }
+    byId("ti-recap").innerHTML =
+        "<div>Problems<b>" + done + "</b></div>"
+      + "<div>Right the first time<b>" + clean + "</b></div>"
+      + "<div>Needed a retry<b>" + (done - clean) + "</b></div>";
+    byId("ti-log").innerHTML = done
+      ? '<div class="ti-log">' + TI.records.map(function(r,i){
+          return '<div class="ti-row"><span class="ti-n">' + (i+1) + '.</span>'
+            + '<span class="ti-q">' + escHtml(r.q) + '<span class="ti-arrow">&rarr;</span>' + escHtml(r.a) + '</span>'
+            + '<span class="ti-k' + (r.clean ? '' : ' retry') + '">' + (r.clean ? 'first try' : 'retry') + '</span></div>';
+        }).join("") + '</div>'
+      : '<div class="ti-empty">Nothing finished yet \u2014 finished problems show up here.</div>';
+
+    const more = TI.submitted && done > TI.submittedAt;
+    byId("gform").classList.toggle("off", TI.submitted && !more);
+    if(more){
+      byId("ti-feedback").innerHTML = '<span class="note">You turned in ' + TI.submittedAt + ' \u2014 you have ' + done + ' now. '
+        + 'Send it again and the newer one counts.</span>';
+      byId("ti-submit").textContent = "Send updated results";
+    } else if(!TI.submitted){
+      byId("ti-feedback").innerHTML = "";
+      byId("ti-submit").textContent = "Submit Results";
+    }
+    byId("formScore").value = done;
+
+    Shell.clearTimers();
+    if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    byId("turnin").classList.remove("off");
+    byId("turnin").scrollTop = 0;
+    if(!TI.submitted || more) setTimeout(function(){ byId(TI.submitted ? "ti-submit" : "studentPeriod").focus(); }, 50);
+  },
+
+  /* back to the drill: a finished problem moves on, a half-done one is left right where it was */
+  back:function(){
+    byId("turnin").classList.add("off");
+    if(TI.currentDone && (TI.records.length !== GOAL || TI.autoShown)){
+      if(TI.records.length >= GOAL) TI.autoShown = true;
+      Shell.next();
+    } else {
+      const eng = Shell.engines[Shell.activeEng];
+      if(eng && eng.resume) eng.resume();
+      const el = document.querySelector("#eq input, #panel input, #nextBtn");
+      if(el) el.focus();
+    }
+  }
+};
+
+function onHiddenFrameLoad(){
+  if(!TI.submitted) return;
+  byId("ti-feedback").innerHTML = '<span class="ok">Successfully submitted. '
+    + (TI.records.length >= GOAL
+        ? 'You can close this page, or keep practicing.'
+        : 'You can close this page, or go back and keep working.')
+    + '</span>';
+  byId("gform").classList.add("off");
+}
+
+function nameCheck(){
+  const ln = byId("lastName").value.trim(), fn = byId("firstName").value.trim();
+  const row = function(t,v){ return '<div class="row"><span class="t">' + t + '</span>'
+    + '<span class="v' + (v ? '' : ' empty') + '">' + (v ? escHtml(v) : '\u2014') + '</span></div>'; };
+  byId("nameCheck").innerHTML =
+      '<div class="head">This is what will be sent \u2014 check it is the right way round:</div>'
+    + row("Last name", ln) + row("First name", fn) + row("Roll call", ln && fn ? ln + ", " + fn : "");
+}
+["lastName","firstName"].forEach(function(id){ byId(id).addEventListener("input", nameCheck); });
+nameCheck();
+
+byId("gform").addEventListener("submit", function(){
+  const ln = byId("lastName").value.trim(), fn = byId("firstName").value.trim();
+  byId("studentName").value =
+      "Period " + byId("studentPeriod").value.trim() + " \u2014 " + ln + " \u2014 " + fn
+    + " \u2014 " + TI.clean() + " clean solves \u2014 " + DRILL_NAME + " (" + TI.records.length + " problems)";
+  byId("formScore").value = TI.records.length;
+  TI.submitted = true;
+  TI.submittedAt = TI.records.length;
+});
+byId("ti-back").addEventListener("click", TI.back);
+byId("turnin-link").addEventListener("click", TI.show);
 
 Shell.next();
 </script>
